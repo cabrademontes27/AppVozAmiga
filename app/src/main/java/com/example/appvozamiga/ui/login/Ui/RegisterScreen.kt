@@ -1,6 +1,5 @@
 package com.example.appvozamiga.ui.login.Ui
 
-import android.provider.ContactsContract
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +10,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -20,7 +21,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,10 +34,11 @@ fun RegisterScreen(viewModel: RegisterViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
     ) {
         Register(
-            modifier = Modifier.align(Alignment.Center),
+            modifier = Modifier
+                .align(Alignment.TopCenter)  // Changed from Center to TopCenter
+                .padding(16.dp),
             viewModel = viewModel
         )
     }
@@ -45,6 +46,7 @@ fun RegisterScreen(viewModel: RegisterViewModel) {
 
 @Composable
 fun Register(modifier: Modifier, viewModel: RegisterViewModel) {
+    val scrollState = rememberScrollState()
 
     val email by viewModel.email.observeAsState("")
     val name by viewModel.name.observeAsState("")
@@ -52,8 +54,17 @@ fun Register(modifier: Modifier, viewModel: RegisterViewModel) {
     val secondLastName by viewModel.secondLastName.observeAsState("")
     val telephone by viewModel.telephone.observeAsState("")
     val isEnabled by viewModel.registerEnable.observeAsState(false)
+    val birthDay by viewModel.birthDay.observeAsState("")
+    val state by viewModel.state.observeAsState("")
+    val municipality by viewModel.municipality.observeAsState("")
+    val colony by viewModel.colony.observeAsState("")
+    val street by viewModel.street.observeAsState("")
 
-    Column(modifier = modifier) {
+
+    Column(modifier = modifier
+        .verticalScroll(scrollState)  // This enables scrolling
+        .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally) {
         HeaderImage(Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.padding(16.dp))
 
@@ -66,19 +77,36 @@ fun Register(modifier: Modifier, viewModel: RegisterViewModel) {
         SecondLastNameField(secondLastName) { viewModel.onSecondLastNameChange(it) }
         Spacer(modifier = Modifier.padding(10.dp))
 
+        BirthDayField(birthDay) { viewModel.onBirthDayChange(it) }
+        Spacer(modifier = Modifier.padding(10.dp))
+
+        StateField(state) { viewModel.onStateChange(it) }
+        Spacer(modifier = Modifier.padding(10.dp))
+
+
+        MunicipalityField(municipality) {viewModel.onMunicipalityChange(it)}
+        Spacer(modifier = Modifier.padding(10.dp))
+
+        ColonyField(colony) {viewModel.onColonyChange(it) }
+        Spacer(modifier = Modifier.padding(10.dp))
+
+        StreetField(colony) {viewModel.onStreetChange(it) }
+        Spacer(modifier = Modifier.padding(10.dp))
+
         TelephoneField(telephone) { viewModel.onTelephoneChange(it) }
         Spacer(modifier = Modifier.padding(10.dp))
 
         EmailField(email) { viewModel.onEmailChange(it) }
         Spacer(modifier = Modifier.padding(10.dp))
-        NextButton(enabled = isEnabled,
-            onClick = { viewModel.registerUser() } )
+
+        RegisterButton(enabled = isEnabled, onClick = { viewModel.registerUser() })
+        Spacer(modifier = Modifier.padding(20.dp))
     }
 }
 
 
 @Composable
-fun NextButton(enabled: Boolean, onClick: () -> Unit) {
+fun RegisterButton(enabled: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier
@@ -92,7 +120,7 @@ fun NextButton(enabled: Boolean, onClick: () -> Unit) {
             disabledContentColor = Color.White.copy(alpha = 0.7f)
         )
     ) {
-        Text(text = "Siguiente")
+        Text(text = "Registrar")
     }
 }
 
@@ -119,7 +147,56 @@ fun EmailField(email: String, onTextFieldChange:(String) -> Unit) {
             unfocusedPlaceholderColor = Color.Gray
         )
     )
+}
 
+@Composable
+fun BirthDayField(value: String, onValueChange: (String) -> Unit){
+    FieldLine(
+        text = "Nombre",
+        value = value,
+        onValueChange = onValueChange,
+        keyboardType = KeyboardType.Text
+    )
+}
+
+@Composable
+fun StateField(value: String, onValueChange: (String) -> Unit){
+    FieldLine(
+        text = "Estado",
+        value = value,
+        onValueChange = onValueChange,
+        keyboardType = KeyboardType.Text
+    )
+}
+
+@Composable
+fun MunicipalityField(value: String, onValueChange: (String) -> Unit){
+    FieldLine(
+        text = "Municipio",
+        value = value,
+        onValueChange = onValueChange,
+        keyboardType = KeyboardType.Text
+    )
+}
+
+@Composable
+fun ColonyField(value: String, onValueChange: (String) -> Unit){
+    FieldLine(
+        text = "Colonia",
+        value = value,
+        onValueChange = onValueChange,
+        keyboardType = KeyboardType.Text
+    )
+}
+
+@Composable
+fun StreetField(value: String, onValueChange: (String) -> Unit){
+    FieldLine(
+        text = "Calle",
+        value = value,
+        onValueChange = onValueChange,
+        keyboardType = KeyboardType.Text
+    )
 }
 
 @Composable
@@ -178,6 +255,10 @@ fun HeaderImage(modifier: Modifier = Modifier) {
         )
     }
 }
+
+
+
+
 
 @Composable
 fun FieldLine(
