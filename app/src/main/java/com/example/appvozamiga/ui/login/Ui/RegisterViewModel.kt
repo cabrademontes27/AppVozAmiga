@@ -1,6 +1,8 @@
 package com.example.appvozamiga.ui.login.Ui
 
 import android.provider.Contacts
+import android.util.Patterns
+import androidx.compose.runtime.State
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -28,12 +30,27 @@ class RegisterViewModel : ViewModel() {
     private val _emailError = MutableLiveData<String?>()
     val emailError: LiveData<String?> = _emailError
 
+    private  val _state = MutableLiveData("")
+    val state : LiveData<String> = _state
+
+    private  val _birthDay = MutableLiveData("")
+    val birthDay : LiveData<String> = _birthDay
+
+    private  val _municipality = MutableLiveData("")
+    val municipality : LiveData<String> = _municipality
+
+    private  val _colony = MutableLiveData("")
+    val  colony : LiveData<String> = _colony
+
+    private  val _street = MutableLiveData("")
+    val street : LiveData<String> = _street
+
 
 
 
     fun isValidEmail(email: String): Boolean {
         val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\$"
-        return email.matches(emailRegex.toRegex()) && email.isNotBlank()
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.isNotBlank()
     }
 
     fun isValidPhone(phone: String): Boolean {
@@ -47,6 +64,7 @@ class RegisterViewModel : ViewModel() {
                 isValidPhone(_telephone.value ?: "") &&
                 (_name.value?.isNotBlank() ?: false) &&
                 (_lastName.value?.isNotBlank() ?: false)
+        //agregar las demas validaciones para state, birday ect
     }
 
     fun registerUser(){
@@ -77,4 +95,34 @@ class RegisterViewModel : ViewModel() {
         _telephone.value = newTelephone
         validateForm()
     }
+
+    fun onBirthDayChange(newBirthDay: String) {
+        _birthDay.value = newBirthDay
+        validateForm()
+    }
+
+    fun onStateChange(newState: String) {
+        _state.value = newState
+        validateForm()
+    }
+
+    fun onMunicipalityChange(newMunicipality: String){
+        _municipality.value = newMunicipality
+        validateForm()
+    }
+
+    fun onColonyChange(newColony: String){
+        _colony.value = newColony
+        validateForm()
+    }
+
+    fun onStreetChange(newStreet: String){
+        _street.value = newStreet
+        validateForm()
+    }
+
+
+
+
+
 }
