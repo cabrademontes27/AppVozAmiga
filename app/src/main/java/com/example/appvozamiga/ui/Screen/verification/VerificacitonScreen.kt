@@ -1,4 +1,4 @@
-package com.example.appvozamiga.ui.login.Screen
+package com.example.appvozamiga.ui.Screen.verification
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
