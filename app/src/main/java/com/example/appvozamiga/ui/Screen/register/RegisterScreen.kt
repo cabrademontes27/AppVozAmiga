@@ -1,7 +1,7 @@
-package com.example.appvozamiga.ui.login.Screen
+package com.example.appvozamiga.ui.Screen.register
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -18,22 +17,17 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +41,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.appvozamiga.R
-import com.example.appvozamiga.ui.login.Ui.ViewModel.RegisterViewModel
+import androidx.compose.ui.platform.LocalContext
+import android.app.Activity
+
 
 @Composable
 fun RegisterScreen(viewModel: RegisterViewModel,  onRegisterComplete: () -> Unit) {
@@ -59,14 +55,19 @@ fun RegisterScreen(viewModel: RegisterViewModel,  onRegisterComplete: () -> Unit
             modifier = Modifier
                 .align(Alignment.TopCenter)  // Changed from Center to TopCenter
                 .padding(16.dp),
-            viewModel = viewModel
+            viewModel = viewModel,
+            onRegisterComplete = onRegisterComplete
         )
     }
 }
 
+@SuppressLint("ContextCastToActivity")
 @Composable
-fun Register(modifier: Modifier, viewModel: RegisterViewModel) {
+fun Register(modifier: Modifier, viewModel: RegisterViewModel, onRegisterComplete: () -> Unit) {
     val scrollState = rememberScrollState()
+    val uiState by viewModel.uiState
+
+
 
     val name by viewModel.name.observeAsState("")
     val lastName by viewModel.lastName.observeAsState("")
@@ -116,8 +117,70 @@ fun Register(modifier: Modifier, viewModel: RegisterViewModel) {
 
         RegisterButton(enabled = isEnabled, onClick = { viewModel.registerUser() })
         Spacer(modifier = Modifier.padding(20.dp))
-    }
 
+
+        // Solo mostrar si el teléfono es válido
+        val context = LocalContext.current
+        val activity = context as? Activity
+
+        if (isEnabled && !uiState.isCodeSent) {
+            Button(
+                onClick = {
+                    activity?.let {
+                        viewModel.sendVerificationCode(telephone, it)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE4EEFF),
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("Enviar código de verificación")
+            }
+        }
+
+// Si el código ya fue enviado
+        if (uiState.isCodeSent) {
+            var code by remember { mutableStateOf("") }
+
+            TextField(
+                value = code,
+                onValueChange = { code = it },
+                label = { Text("Código de verificación") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Button(
+                onClick = {
+                    viewModel.verifyCodeManually(code)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFA4937F),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Verificar código")
+            }
+        }
+
+// Mostrar mensaje si verificado
+        if (uiState.isVerified) {
+            Text("Teléfono verificado ✅", color = Color.Green)
+        }
+
+// Mostrar error si hay
+        uiState.errorMessage?.let { error ->
+            Text("Error: $error", color = Color.Red)
+        }
+
+
+    }
 }
 
 
@@ -333,7 +396,7 @@ fun SecondLastNameField(value: String, onValueChange: (String) -> Unit) {
 @Composable
 fun TelephoneField(value: String, onValueChange: (String) -> Unit) {
     FieldLine(
-        text = "Teléfono",
+        text = "+11-111-111-1111",
         value = value,
         onValueChange = onValueChange,
         keyboardType = KeyboardType.Phone
