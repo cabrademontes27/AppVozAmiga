@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "919864468221",
+    "project_id": "vozamiga-001",
+    "storage_bucket": "vozamiga-001.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919864468221:android:3574073bc3a9040ae55494",
+        "android_client_info": {
+          "package_name": "com.example.appvozamiga"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBqGWeLIuomttxxWedZ_0lFa5aIPd20nc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
