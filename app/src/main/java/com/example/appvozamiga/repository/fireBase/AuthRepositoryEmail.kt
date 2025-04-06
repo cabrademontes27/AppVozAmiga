@@ -5,7 +5,7 @@ import android.util.Log
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
 
-class FirebaseAuthRepositoryEmail {
+class AuthRepositoryEmail {
 
     private val auth = FirebaseAuth.getInstance()
 
