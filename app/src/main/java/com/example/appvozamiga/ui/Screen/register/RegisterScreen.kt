@@ -42,18 +42,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.appvozamiga.R
 import androidx.compose.ui.platform.LocalContext
-import android.app.Activity
+import com.example.appvozamiga.ViewModels.RegisterViewModel
+import com.example.appvozamiga.repository.fireBase.setUserRegistered
 
 
 @Composable
-fun RegisterScreen(viewModel: RegisterViewModel,  onRegisterComplete: () -> Unit) {
+fun RegisterScreen(viewModel: RegisterViewModel, onRegisterComplete: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         Register(
             modifier = Modifier
-                .align(Alignment.TopCenter)  // Changed from Center to TopCenter
+                .align(Alignment.TopCenter)
                 .padding(16.dp),
             viewModel = viewModel,
             onRegisterComplete = onRegisterComplete
@@ -63,9 +63,15 @@ fun RegisterScreen(viewModel: RegisterViewModel,  onRegisterComplete: () -> Unit
 
 @SuppressLint("ContextCastToActivity")
 @Composable
-fun Register(modifier: Modifier, viewModel: RegisterViewModel, onRegisterComplete: () -> Unit) {
+fun Register(
+    modifier: Modifier,
+    viewModel: RegisterViewModel,
+    onRegisterComplete: () -> Unit
+) {
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState
+    //var isLoading = mutableStateOf(false)
+    //var isSuccess = mutableStateOf(false)
 
 
 
@@ -79,107 +85,80 @@ fun Register(modifier: Modifier, viewModel: RegisterViewModel, onRegisterComplet
     val municipality by viewModel.municipality.observeAsState("")
     val colony by viewModel.colony.observeAsState("")
     val street by viewModel.street.observeAsState("")
+    val email by viewModel.email.observeAsState("")
+
+    val context = LocalContext.current
 
 
-    Column(modifier = modifier
-        .verticalScroll(scrollState)  // This enables scrolling
-        .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally) {
+
+
+    Column(
+        modifier = modifier
+            .verticalScroll(scrollState)
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         HeaderImage(Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.padding(16.dp))
 
+        // Campos
         NameField(name) { viewModel.onNameChange(it) }
-        Spacer(modifier = Modifier.padding(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         LastNameField(lastName) { viewModel.onLastNameChange(it) }
-        Spacer(modifier = Modifier.padding(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         SecondLastNameField(secondLastName) { viewModel.onSecondLastNameChange(it) }
-        Spacer(modifier = Modifier.padding(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         BirthDayField(birthDay) { viewModel.onBirthDayChange(it) }
-        Spacer(modifier = Modifier.padding(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         StateField(state) { viewModel.onStateChange(it) }
-        Spacer(modifier = Modifier.padding(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        MunicipalityField(municipality) {viewModel.onMunicipalityChange(it)}
-        Spacer(modifier = Modifier.padding(10.dp))
+        MunicipalityField(municipality) { viewModel.onMunicipalityChange(it) }
+        Spacer(modifier = Modifier.height(10.dp))
 
-        ColonyField(colony) {viewModel.onColonyChange(it) }
-        Spacer(modifier = Modifier.padding(10.dp))
+        ColonyField(colony) { viewModel.onColonyChange(it) }
+        Spacer(modifier = Modifier.height(10.dp))
 
-        StreetField(street) {viewModel.onStreetChange(it) }
-        Spacer(modifier = Modifier.padding(10.dp))
+        StreetField(street) { viewModel.onStreetChange(it) }
+        Spacer(modifier = Modifier.height(10.dp))
+
+        EmailField(email) { viewModel.onEmailChange(it) }
+        Spacer(modifier = Modifier.height(10.dp))
 
         TelephoneField(telephone) { viewModel.onTelephoneChange(it) }
-        Spacer(modifier = Modifier.padding(10.dp))
-
-        RegisterButton(enabled = isEnabled, onClick = { viewModel.registerUser() })
-        Spacer(modifier = Modifier.padding(20.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
 
-        // Solo mostrar si el teléfono es válido
-        val context = LocalContext.current
-        val activity = context as? Activity
 
-        if (isEnabled && !uiState.isCodeSent) {
-            Button(
-                onClick = {
-                    activity?.let {
-                        viewModel.sendVerificationCode(telephone, it)
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE4EEFF),
-                    contentColor = Color.Black
-                )
-            ) {
-                Text("Enviar código de verificación")
-            }
-        }
+        Button(
+            onClick = {
+                viewModel.sendMagicLink(email = viewModel.email.value ?: "", context = context)
+                // 1) Llamar a la función "registerUser" si querés
+                viewModel.registerUser()
+                // 2) Guardar en SharedPreferences que el usuario ya se registró
+                setUserRegistered(context)
+                // 3) Navegar a la siguiente pantalla (onRegisterComplete)
+                //onRegisterComplete()
 
-// Si el código ya fue enviado
-        if (uiState.isCodeSent) {
-            var code by remember { mutableStateOf("") }
-
-            TextField(
-                value = code,
-                onValueChange = { code = it },
-                label = { Text("Código de verificación") },
-                modifier = Modifier.fillMaxWidth()
+            },
+            enabled = isEnabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFA4937F),
+                contentColor = Color.White,
+                disabledContainerColor = Color(0xFFA4937F).copy(alpha = 0.5f),
+                disabledContentColor = Color.White.copy(alpha = 0.7f)
             )
-
-            Button(
-                onClick = {
-                    viewModel.verifyCodeManually(code)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFA4937F),
-                    contentColor = Color.White
-                )
-            ) {
-                Text("Verificar código")
-            }
+        ) {
+            Text(text = "Registrar")
         }
-
-// Mostrar mensaje si verificado
-        if (uiState.isVerified) {
-            Text("Teléfono verificado ✅", color = Color.Green)
-        }
-
-// Mostrar error si hay
-        uiState.errorMessage?.let { error ->
-            Text("Error: $error", color = Color.Red)
-        }
-
-
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -214,8 +193,7 @@ fun HeaderImage(modifier: Modifier = Modifier) {
         Image(
             painter = painterResource(id = R.drawable.ic_launcher_foreground),
             contentDescription = "Logo",
-            modifier = modifier
-                .size(300.dp)
+            modifier = modifier.size(300.dp)
         )
     }
 }
@@ -320,6 +298,16 @@ fun NumberPicker(
             Icon(Icons.Default.KeyboardArrowRight, "Increase")
         }
     }
+}
+
+@Composable
+fun EmailField(value: String, onValueChange: (String) -> Unit) {
+    FieldLine(
+        text = "Correo electrónico",
+        value = value,
+        onValueChange = onValueChange,
+        keyboardType = KeyboardType.Text
+    )
 }
 
 @Composable
