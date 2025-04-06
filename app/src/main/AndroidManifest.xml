@@ -17,6 +17,15 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.AppVozAmiga">
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="vozamiga-001.firebaseapp.com" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
