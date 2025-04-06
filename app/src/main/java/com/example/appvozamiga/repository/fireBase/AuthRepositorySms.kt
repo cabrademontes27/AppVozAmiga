@@ -1,13 +1,14 @@
-package com.example.appvozamiga.data.firebase
-
-//se encargara de la comunicacion con firabase auth
+package com.example.appvozamiga.repository.fireBase
 
 import android.app.Activity
-import com.google.firebase.FirebaseException
-import com.google.firebase.auth.*
+import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
+import com.google.firebase.auth.PhoneAuthProvider
 import java.util.concurrent.TimeUnit
 
-class FirebaseAuthRepository {
+class FirebaseAuthRepositorySms {
 
     private val auth = FirebaseAuth.getInstance()
 
@@ -19,6 +20,8 @@ class FirebaseAuthRepository {
         activity: Activity,
         callbacks: PhoneAuthProvider.OnVerificationStateChangedCallbacks
     ) {
+        Log.d("FirebaseAuthRepo", "📲 Enviando código a: $phoneNumber")
+
         val options = PhoneAuthOptions.newBuilder(auth)
             .setPhoneNumber(phoneNumber)
             .setTimeout(60L, TimeUnit.SECONDS)
@@ -47,8 +50,10 @@ class FirebaseAuthRepository {
         auth.signInWithCredential(credential)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    Log.d("FirebaseAuthRepo", " signInWithCredential: success")
                     onSuccess()
                 } else {
+                    Log.w("FirebaseAuthRepo", " signInWithCredential: failure", task.exception)
                     onFailure(task.exception ?: Exception("Unknown error"))
                 }
             }
