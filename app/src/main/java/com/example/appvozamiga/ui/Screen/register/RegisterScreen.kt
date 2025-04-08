@@ -136,13 +136,25 @@ fun Register(
 
         Button(
             onClick = {
-                viewModel.sendMagicLink(email = viewModel.email.value ?: "", context = context)
-                // 1) Llamar a la función "registerUser" si querés
-                viewModel.registerUser()
-                // 2) Guardar en SharedPreferences que el usuario ya se registró
+                viewModel.registerUser(
+                    name = name,
+                    lastName = lastName,
+                    secondLastName = secondLastName,
+                    email = email,
+                    telephone = telephone,
+                    birthDay = birthDay,
+                    state = state,
+                    municipality = municipality,
+                    colony = colony,
+                    street = street,
+                    context = context
+                )
+
+                // 2. Enviar enlace mágico por correo
+                viewModel.sendMagicLink(email = email, context = context)
+
+                // 3. Guardar que ya se registró (si lo usas para controlar flujo)
                 setUserRegistered(context)
-                // 3) Navegar a la siguiente pantalla (onRegisterComplete)
-                //onRegisterComplete()
 
             },
             enabled = isEnabled,
