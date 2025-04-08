@@ -50,6 +50,8 @@ fun AppNavigation() {
                 state.isLoading -> {
                     LoadingScreen()
                 }
+                //cambiar ya que esto se manda sin que el link sea verificado aun, solo es de que
+                //ya se mando el linkn
                 state.isSuccess -> {
                     SuccessScreen(onFinish = {
                         navController.navigate(Routes.MAIN_MENU) {
