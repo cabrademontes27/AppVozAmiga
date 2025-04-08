@@ -24,10 +24,10 @@ class MainActivity : ComponentActivity() {
             FirebaseAuth.getInstance()
                 .signInWithEmailLink(savedEmail, emailLink)
                 .addOnSuccessListener {
-                    Log.d("MainActivity", "✅ Usuario autenticado correctamente")
+                    Log.d("MainActivity", "Usuario autenticado correctamente")
                     prefs.edit().putBoolean("is_registered", true).apply()
 
-                    // ⬅️ Aquí notificamos al ViewModel
+                    // Aquí notificamos al ViewModel
                     registerViewModel.setUserVerified(context = this)
                 }
                 .addOnFailureListener {
