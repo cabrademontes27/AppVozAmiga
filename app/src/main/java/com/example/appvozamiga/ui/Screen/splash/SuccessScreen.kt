@@ -37,7 +37,7 @@ fun SuccessScreen(onFinish: () -> Unit) {
                 modifier = Modifier.size(100.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Text("¡Correo verificado!", fontSize = 20.sp, color = Color.White)
+            Text("Datos almacenados correctamente", fontSize = 20.sp, color = Color.White)
         }
     }
 }
