@@ -114,8 +114,47 @@ class RegisterViewModel : ViewModel() {
         )
     }
 
-    fun registerUser() {
-        // Aquí va el guardado del usuario
+    fun registerUser(
+        name: String,
+        lastName: String,
+        secondLastName: String,
+        email: String,
+        telephone: String,
+        birthDay: String,
+        state: String,
+        municipality: String,
+        colony: String,
+        street: String,
+        context: Context
+    ) {
+        _name.value = name
+        _lastName.value = lastName
+        _secondLastName.value = secondLastName
+        _email.value = email
+        _telephone.value = telephone
+        _birthDay.value = birthDay
+        _state.value = state
+        _municipality.value = municipality
+        _colony.value = colony
+        _street.value = street
+
+        // Guardar en SharedPreferences como respaldo
+        saveUserDataToPrefs(context)
+
+        // Crear el objeto UserData
+        val location = Location(state, municipality, colony, street)
+        val user = UserData(name, lastName, secondLastName, email, telephone, birthDay, location)
+
+        // Enviar a MongoDB
+        viewModelScope.launch {
+            val success = MongoUserRepository.registerUser(user)
+            if (success) {
+                _uiState.value = _uiState.value.copy(isSuccess = true)
+                Log.i("RegisterViewModel", "Usuario registrado en MongoDB")
+            } else {
+                Log.e("RegisterViewModel", "Error al registrar usuario en MongoDB")
+            }
+        }
     }
 
 
@@ -136,39 +175,29 @@ class RegisterViewModel : ViewModel() {
 
 
     //aqui verificamos que el link ya se haya verificado o sifo abierto
-    fun setUserVerified(){
+    fun setUserVerified(context: Context) {
         _uiState.value = _uiState.value.copy(isVerified = true)
-
-        // Esta parte sera para las importacion a la base de datos en mongodb
-        val location = Location(
-            state = state.value ?: "",
-            municipality = municipality.value ?: "",
-            colony = colony.value ?: "",
-            street = street.value ?: ""
-        )
-
-        val user = UserData(
-            name = name.value ?: "",
-            lastName = lastName.value ?: "",
-            secondLastName = secondLastName.value ?: "",
-            email = email.value ?: "",
-            telephone = telephone.value ?: "",
-            birthDay = birthDay.value ?: "",
-            location = location
-        )
-
-
-        viewModelScope.launch {
-            val success = MongoUserRepository.registerUser(user)
-            if (success) {
-                _uiState.value = _uiState.value.copy(isSuccess = true)
-            } else {
-                Log.e("ViewModel", "Error al registrar el usuario en MongoDB")
-            }
-        }
+        Log.i("RegisterViewModel", "Usuario verificado por enlace mágico")
     }
 
 
+
+    fun saveUserDataToPrefs(context: Context) {
+        val prefs = context.getSharedPreferences("user_data", Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            putString("name", name.value)
+            putString("lastName", lastName.value)
+            putString("secondLastName", secondLastName.value)
+            putString("email", email.value)
+            putString("telephone", telephone.value)
+            putString("birthDay", birthDay.value)
+            putString("state", state.value)
+            putString("municipality", municipality.value)
+            putString("colony", colony.value)
+            putString("street", street.value)
+            apply()
+        }
+    }
 
 
 
