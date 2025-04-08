@@ -10,7 +10,6 @@ import android.util.Log
 import androidx.activity.viewModels
 import com.example.appvozamiga.ViewModels.RegisterViewModel
 
-
 class MainActivity : ComponentActivity() {
     private val registerViewModel: RegisterViewModel by viewModels()
 
@@ -29,7 +28,7 @@ class MainActivity : ComponentActivity() {
                     prefs.edit().putBoolean("is_registered", true).apply()
 
                     // ⬅️ Aquí notificamos al ViewModel
-                    registerViewModel.setUserVerified()
+                    registerViewModel.setUserVerified(context = this)
                 }
                 .addOnFailureListener {
                     Log.e("MainActivity", "❌ Error de autenticación", it)
