@@ -10,7 +10,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.appvozamiga.ViewModels.RegisterViewModel
 import com.example.appvozamiga.repository.fireBase.isUserRegistered
 import com.example.appvozamiga.ui.Screen.Menu.MainMenuScreen
+import com.example.appvozamiga.ui.Screen.Menu.functions.AboutMeScreen
+import com.example.appvozamiga.ui.Screen.Menu.functions.CameraScreen
+import com.example.appvozamiga.ui.Screen.Menu.functions.DrugsScreen
+import com.example.appvozamiga.ui.Screen.Menu.functions.UbicationScreen
 import com.example.appvozamiga.ui.Screen.register.RegisterScreen
+import com.example.appvozamiga.ui.Screen.splash.LoadingRedirectScreen
 import com.example.appvozamiga.ui.Screen.splash.LoadingScreen
 import com.example.appvozamiga.ui.Screen.splash.SplashScreen
 import com.example.appvozamiga.ui.Screen.splash.SuccessScreen
@@ -77,9 +82,40 @@ fun AppNavigation() {
             })
         }
 
+        // Main menu screen
         composable(Routes.MAIN_MENU) {
-            // Esta sería la pantalla principal de la app
-            MainMenuScreen()
+            MainMenuScreen(navController = navController)
         }
+
+        // Intermediate loading transitions
+        composable(Routes.LOADING_TO_DRUGS) {
+            LoadingRedirectScreen(navController, Routes.DRUGS)
+        }
+        composable(Routes.LOADING_TO_LOCATION) {
+            LoadingRedirectScreen(navController, Routes.LOCATION)
+        }
+        composable(Routes.LOADING_TO_CAMERA) {
+            LoadingRedirectScreen(navController, Routes.CAMERA)
+        }
+        composable(Routes.LOADING_TO_ABOUT_ME) {
+            LoadingRedirectScreen(navController, Routes.ABOUT_ME)
+        }
+
+        // Final destination screens
+        composable(Routes.DRUGS) {
+            DrugsScreen(navController)
+        }
+        composable(Routes.LOCATION) {
+            UbicationScreen(navController)
+        }
+        composable(Routes.CAMERA) {
+            CameraScreen(navController)
+        }
+        composable(Routes.ABOUT_ME) {
+            AboutMeScreen(navController)
+        }
+
+
+
     }
 }
