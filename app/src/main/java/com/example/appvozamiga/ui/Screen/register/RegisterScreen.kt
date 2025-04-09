@@ -203,7 +203,7 @@ fun HeaderImage(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.TopCenter
     ) {
         Image(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+            painter = painterResource(id = R.drawable.logo),
             contentDescription = "Logo",
             modifier = modifier.size(300.dp)
         )

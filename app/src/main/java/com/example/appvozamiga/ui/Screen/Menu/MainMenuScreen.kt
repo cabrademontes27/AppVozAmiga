@@ -6,7 +6,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,90 +20,153 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.appvozamiga.R
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextAlign
+import androidx.navigation.NavController
+import com.example.appvozamiga.ui.Navigation.Routes
 
 
 //empezar a recrear la imagen de todo lo que contendra el mainMenu
-
-data class MenuItem(val title: String, val icon: Painter)
+data class MenuItem(
+    val title: String,
+    val icon: Painter,
+    val color: Color
+)
 
 @Composable
-fun MainMenuScreen() {
+fun MainMenuScreen(navController: NavController) {
     val menuItems = listOf(
-        MenuItem("Medicamentos", painterResource(R.drawable.ic_launcher_foreground)),
-        MenuItem("Ubicación", painterResource(R.drawable.ic_launcher_foreground)),
-        MenuItem("Cámara", painterResource(R.drawable.ic_launcher_foreground)),
-        MenuItem("Asistente", painterResource(R.drawable.ic_launcher_foreground)),
-        // Agrega más si necesitas
+        MenuItem("Drugs", painterResource(R.drawable.icon_medicament), Color(0xFF5D9CEC)),
+        MenuItem("Location", painterResource(R.drawable.icons_ubicacion), Color(0xFF4BC1A5)),
+        MenuItem("Camera", painterResource(R.drawable.camara_icon), Color(0xFFF6BB42)),
+        MenuItem("About Me", painterResource(R.drawable.profile), Color(0xFFE9573F))
     )
 
-    Column(
+    // Mapa para rutas
+    val navigationMap = mapOf(
+        "Drugs" to Routes.LOADING_TO_DRUGS,
+        "Location" to Routes.LOADING_TO_LOCATION,
+        "Camera" to Routes.LOADING_TO_CAMERA,
+        "About Me" to Routes.LOADING_TO_ABOUT_ME
+    )
+
+    val gridState = rememberLazyGridState()
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE4EEFF)) // fondo general
-            .padding(16.dp)
+            .background(Color.White)
     ) {
-        Text(
-            text = "Voz Amiga",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFA4937F),
+        Column(
             modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(top = 16.dp)
-        )
-
-        Text(
-            text = "Bienvenido/a",
-            fontSize = 18.sp,
-            color = Color(0xFFA4937F),
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(top = 8.dp, bottom = 24.dp)
-        )
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxSize()
+                .padding(24.dp)
         ) {
-            items(menuItems) { item ->
-                MenuButton(item)
+            // Encabezado
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.logo), // Luego agregamos algo
+                    contentDescription = "App Logo",
+                    modifier = Modifier.size(80.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Voz Amiga",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2D3436)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Bienvenido/a",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFF636E72)
+                )
+            }
+
+            // Grid de botones
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                state = gridState,
+                modifier = Modifier.fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(25.dp),
+                horizontalArrangement = Arrangement.spacedBy(25.dp)
+            ) {
+                items(menuItems) { item ->
+                    MenuButton(item) {
+                        navigationMap[item.title]?.let { route ->
+                            navController.navigate(route)
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun MenuButton(item: MenuItem) {
+fun MenuButton(item: MenuItem, onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         modifier = Modifier
             .aspectRatio(1f)
             .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 10.dp
+        )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = item.icon,
-                contentDescription = item.title,
-                modifier = Modifier.size(64.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = item.title,
-                fontSize = 16.sp,
-                color = Color(0xFFA4937F)
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp), // separa icono y texto
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(
+                            color = item.color.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = item.icon,
+                        contentDescription = item.title,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF2D3436),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
+
 
