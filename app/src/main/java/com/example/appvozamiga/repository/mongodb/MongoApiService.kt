@@ -7,6 +7,6 @@ import retrofit2.http.POST
 
 interface MongoApiService {
 
-    @POST("api/registerUser") 
+    @POST("api/registerUser")
     suspend fun registerUser(@Body user: UserData): Response<Unit>
 }
