@@ -5,7 +5,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    private const val BASE_URL = "http://192.168.0.10:3000/"
+    private const val BASE_URL = "https://api-node-0kfj.onrender.com/"
 
     val apiService: MongoApiService by lazy {
         Retrofit.Builder()
