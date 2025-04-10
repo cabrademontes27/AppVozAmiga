@@ -1,6 +1,7 @@
 package com.example.appvozamiga.ViewModels
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.State
@@ -11,6 +12,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appvozamiga.repository.fireBase.AuthRepositorySms
 import com.example.appvozamiga.repository.fireBase.AuthRepositoryEmail
+import com.example.appvozamiga.repository.fireBase.getUserEmail
+import com.example.appvozamiga.repository.fireBase.isUserRegistered
 import com.example.appvozamiga.repository.fireBase.setUserRegistered
 import com.example.appvozamiga.repository.mongodb.MongoUserRepository
 import com.example.appvozamiga.repository.mongodb.models.Location
@@ -18,7 +21,9 @@ import com.example.appvozamiga.repository.mongodb.models.UserData
 import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URL
 
 class RegisterViewModel : ViewModel() {
@@ -61,7 +66,7 @@ class RegisterViewModel : ViewModel() {
     private val _street = MutableLiveData("")
     val street: LiveData<String> = _street
 
-    private  val _email = MutableLiveData("")
+    private val _email = MutableLiveData("")
     val email: LiveData<String> = _email
 
 
@@ -84,16 +89,45 @@ class RegisterViewModel : ViewModel() {
     }
 
     // Métodos de cambio de campo
-    fun onNameChange(newName: String) { _name.value = newName; validateForm() }
-    fun onLastNameChange(newLastName: String) { _lastName.value = newLastName; validateForm() }
-    fun onSecondLastNameChange(newSecondLastName: String) { _secondLastName.value = newSecondLastName; validateForm() }
-    fun onTelephoneChange(newTelephone: String) { _telephone.value = newTelephone; validateForm() }
-    fun onBirthDayChange(newBirthDay: String) { _birthDay.value = newBirthDay; validateForm() }
-    fun onStateChange(newState: String) { _state.value = newState; validateForm() }
-    fun onMunicipalityChange(newMunicipality: String) { _municipality.value = newMunicipality; validateForm() }
-    fun onColonyChange(newColony: String) { _colony.value = newColony; validateForm() }
-    fun onStreetChange(newStreet: String) { _street.value = newStreet; validateForm() }
-    fun onEmailChange(newEmail: String){_email.value = newEmail; validateForm()}
+    fun onNameChange(newName: String) {
+        _name.value = newName; validateForm()
+    }
+
+    fun onLastNameChange(newLastName: String) {
+        _lastName.value = newLastName; validateForm()
+    }
+
+    fun onSecondLastNameChange(newSecondLastName: String) {
+        _secondLastName.value = newSecondLastName; validateForm()
+    }
+
+    fun onTelephoneChange(newTelephone: String) {
+        _telephone.value = newTelephone; validateForm()
+    }
+
+    fun onBirthDayChange(newBirthDay: String) {
+        _birthDay.value = newBirthDay; validateForm()
+    }
+
+    fun onStateChange(newState: String) {
+        _state.value = newState; validateForm()
+    }
+
+    fun onMunicipalityChange(newMunicipality: String) {
+        _municipality.value = newMunicipality; validateForm()
+    }
+
+    fun onColonyChange(newColony: String) {
+        _colony.value = newColony; validateForm()
+    }
+
+    fun onStreetChange(newStreet: String) {
+        _street.value = newStreet; validateForm()
+    }
+
+    fun onEmailChange(newEmail: String) {
+        _email.value = newEmail; validateForm()
+    }
 
     fun registerUser(
         name: String,
@@ -132,9 +166,12 @@ class RegisterViewModel : ViewModel() {
             if (success) {
                 _uiState.value = _uiState.value.copy(isSuccess = true)
                 Log.i("RegisterViewModel", "Usuario registrado en MongoDB")
-                Toast.makeText(context, "Registro exitoso. Revisa tu correo para verificar.", Toast.LENGTH_LONG).show()
-            }
-            else {
+                Toast.makeText(
+                    context,
+                    "Registro exitoso. Revisa tu correo para verificar.",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
                 Log.e("RegisterViewModel", "Error al registrar usuario en MongoDB")
             }
         }
@@ -145,7 +182,6 @@ class RegisterViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(isVerified = true)
         Log.i("RegisterViewModel", "Usuario verificado por token en backend")
     }
-
 
 
     fun saveUserDataToPrefs(context: Context) {
@@ -181,6 +217,7 @@ class RegisterViewModel : ViewModel() {
 
                     setUserRegistered(context) // ← Aquí marcas que el usuario está registrado
                     setUserVerified(context)   // ← Esto actualiza el estado del UI
+                    goToMainMenu()
 
                     Log.d("RegisterViewModel", "✅ Token verificado correctamente")
                 } else {
@@ -192,8 +229,48 @@ class RegisterViewModel : ViewModel() {
         }
     }
 
+    fun handleStartupIntent(intent: Intent?, context: Context) {
+        val tokenId = intent?.data?.getQueryParameter("id")
+
+        if (tokenId != null) {
+            verificarToken(tokenId, context)
+        } else if (!isUserRegistered(context)) {
+            val email = getUserEmail(context)
+            if (email != null) {
+                verificarEstadoDesdeBackend(email, context)
+            }
+        }
+    }
+    private fun verificarEstadoDesdeBackend(email: String, context: Context) {
+        val url = "https://api-node-0kfj.onrender.com/api/checkVerified?email=$email"
+
+        viewModelScope.launch {
+            try {
+                val resultado = withContext(Dispatchers.IO) { URL(url).readText() }
+
+                if (resultado.contains("true")) {
+                    setUserRegistered(context)
+                    setUserVerified(context)
+                    goToMainMenu()
+                    Log.d("RegisterViewModel", "✔️ El correo ya estaba verificado desde antes")
+                } else {
+                    Log.d("RegisterViewModel", "❌ El correo aún no ha sido verificado")
+                }
+            } catch (e: Exception) {
+                Log.e("RegisterViewModel", "❌ Error conectando con backend", e)
+            }
+        }
+    }
+
+    //esta parte actulizara los datos que reciba el main y lo mandarra
+    // al navigation
 
 
-
+    fun goToMainMenu() {
+        _uiState.value = _uiState.value.copy(shouldNavigateToMenu = true)
+    }
+    fun resetNavigationFlag() {
+        _uiState.value = _uiState.value.copy(shouldNavigateToMenu = false)
+    }
 
 }
