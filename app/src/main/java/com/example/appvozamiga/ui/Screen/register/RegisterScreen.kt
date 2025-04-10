@@ -150,11 +150,7 @@ fun Register(
                     context = context
                 )
 
-                // 2. Enviar enlace mágico por correo
-                viewModel.sendMagicLink(email = email, context = context)
-
                 // 3. Guardar que ya se registró (si lo usas para controlar flujo)
-                setUserRegistered(context)
 
             },
             enabled = isEnabled,
