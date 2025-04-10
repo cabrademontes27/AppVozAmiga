@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.appvozamiga.MainActivity
 import com.example.appvozamiga.ViewModels.RegisterViewModel
 import com.example.appvozamiga.repository.fireBase.isUserRegistered
 import com.example.appvozamiga.ui.Screen.Menu.MainMenuScreen
@@ -48,6 +49,7 @@ fun AppNavigation() {
         }
 
         composable(Routes.REGISTER) {
+            val context = LocalContext.current
             val registerViewModel: RegisterViewModel = viewModel()
             val state = registerViewModel.uiState.value
 
@@ -55,21 +57,22 @@ fun AppNavigation() {
                 state.isLoading -> {
                     LoadingScreen()
                 }
-                //cambiar ya que esto se manda sin que el link sea verificado aun, solo es de que
-                //ya se mando el linkn
-                state.isSuccess -> {
-                    SuccessScreen(onFinish = {
-                        navController.navigate(Routes.MAIN_MENU) {
-                            popUpTo(Routes.REGISTER) { inclusive = true }
-                        }
-                    })
-                }
-                else -> {
-                    RegisterScreen(viewModel = registerViewModel) {
+
+                state.shouldNavigateToMenu -> {
+                    LaunchedEffect(Unit) {
+                        registerViewModel.resetNavigationFlag()
                         navController.navigate(Routes.MAIN_MENU) {
                             popUpTo(Routes.REGISTER) { inclusive = true }
                         }
                     }
+                }
+
+                state.isVerified -> {
+                    SuccessScreen(onFinish = { /* no navegar manualmente */ })
+                }
+
+                else -> {
+                    RegisterScreen(viewModel = registerViewModel) { }
                 }
             }
         }
