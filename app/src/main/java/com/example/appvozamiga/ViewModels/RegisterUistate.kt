@@ -9,5 +9,6 @@ data class RegisterUiState(
     val errorMessage: String? = null,
     val isVerified: Boolean = false,
     val isSuccess: Boolean = false,
+    val shouldNavigateToMenu: Boolean = false,
 
 )
