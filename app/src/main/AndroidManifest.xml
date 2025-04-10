@@ -27,6 +27,16 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
+                    android:host="tuapp.com"
+                    android:pathPrefix="/verify" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
                     android:host="vozamiga-001.firebaseapp.com" />
             </intent-filter>
             <intent-filter>
