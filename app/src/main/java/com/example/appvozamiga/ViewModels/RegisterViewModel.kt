@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appvozamiga.repository.fireBase.AuthRepositorySms
 import com.example.appvozamiga.repository.fireBase.AuthRepositoryEmail
+import com.example.appvozamiga.repository.fireBase.setUserRegistered
 import com.example.appvozamiga.repository.mongodb.MongoUserRepository
 import com.example.appvozamiga.repository.mongodb.models.Location
 import com.example.appvozamiga.repository.mongodb.models.UserData
@@ -18,11 +19,12 @@ import com.google.firebase.auth.ActionCodeSettings
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
 import kotlinx.coroutines.launch
+import java.net.URL
 
 class RegisterViewModel : ViewModel() {
 
     //  Firebase
-    private val firebaseAuthRepo = AuthRepositorySms()
+    //private val firebaseAuthRepo = AuthRepositorySms()
     private val _uiState = mutableStateOf(RegisterUiState())
     val uiState: State<RegisterUiState> = _uiState
     private val auth = FirebaseAuth.getInstance()
@@ -93,27 +95,6 @@ class RegisterViewModel : ViewModel() {
     fun onStreetChange(newStreet: String) { _street.value = newStreet; validateForm() }
     fun onEmailChange(newEmail: String){_email.value = newEmail; validateForm()}
 
-
-    // aqui lo que se hacia era validar el codigo que se mandaba por sms
-    fun verifyCodeManually(code: String) {
-        val id = _uiState.value.verificationId ?: return
-        val credential = firebaseAuthRepo.getCredential(id, code)
-        signInWithCredential(credential)
-    }
-    //esta funcion es igual utilizada para sms entonces por ahora no tiene utilidad
-    private fun signInWithCredential(credential: PhoneAuthCredential) {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-        firebaseAuthRepo.signInWithPhoneAuthCredential(
-            credential,
-            onSuccess = {
-                _uiState.value = _uiState.value.copy(isLoading = false, isVerified = true)
-            },
-            onFailure = { exception ->
-                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = exception.localizedMessage)
-            }
-        )
-    }
-
     fun registerUser(
         name: String,
         lastName: String,
@@ -151,33 +132,18 @@ class RegisterViewModel : ViewModel() {
             if (success) {
                 _uiState.value = _uiState.value.copy(isSuccess = true)
                 Log.i("RegisterViewModel", "Usuario registrado en MongoDB")
-            } else {
+                Toast.makeText(context, "Registro exitoso. Revisa tu correo para verificar.", Toast.LENGTH_LONG).show()
+            }
+            else {
                 Log.e("RegisterViewModel", "Error al registrar usuario en MongoDB")
             }
         }
     }
 
-
-    fun sendMagicLink(email: String, context: Context) {
-        if (!isValidEmail(email)) {
-            Toast.makeText(context, "Correo no válido", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        firebaseAuthEmailRepo.sendMagicLink(email, context) { success, error ->
-            if (success) {
-                Toast.makeText(context, "Correo enviado correctamente", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-
     //aqui verificamos que el link ya se haya verificado o sifo abierto
     fun setUserVerified(context: Context) {
         _uiState.value = _uiState.value.copy(isVerified = true)
-        Log.i("RegisterViewModel", "Usuario verificado por enlace mágico")
+        Log.i("RegisterViewModel", "Usuario verificado por token en backend")
     }
 
 
@@ -198,6 +164,34 @@ class RegisterViewModel : ViewModel() {
             apply()
         }
     }
+
+    fun verificarToken(tokenId: String, context: Context) {
+        val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        val url = "https://api-node-0kfj.onrender.com/verify?id=$tokenId"
+
+        viewModelScope.launch {
+            try {
+                val result = URL(url).readText()
+
+                if (result == "valid") {
+                    prefs.edit()
+                        .putBoolean("is_registered", true)
+                        .putString("user_token", tokenId)
+                        .apply()
+
+                    setUserRegistered(context) // ← Aquí marcas que el usuario está registrado
+                    setUserVerified(context)   // ← Esto actualiza el estado del UI
+
+                    Log.d("RegisterViewModel", "✅ Token verificado correctamente")
+                } else {
+                    Log.e("RegisterViewModel", "❌ Token inválido")
+                }
+            } catch (e: Exception) {
+                Log.e("RegisterViewModel", "❌ Error conectando con backend", e)
+            }
+        }
+    }
+
 
 
 
