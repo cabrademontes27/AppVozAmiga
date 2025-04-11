@@ -17,7 +17,7 @@ fun isUserRegistered(context: Context): Boolean {
     return prefs.getBoolean(KEY_IS_REGISTERED, false)
 }
 
-fun saveUserEmail(context: Context, email: String) {
+fun saveSignInEmail(context: Context, email: String) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     prefs.edit().putString(KEY_EMAIL_FOR_SIGNIN, email).apply()
 }

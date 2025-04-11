@@ -27,7 +27,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="tuapp.com"
+                    android:host="api-node-0kfj.onrender.com"
                     android:pathPrefix="/verify" />
             </intent-filter>
 
