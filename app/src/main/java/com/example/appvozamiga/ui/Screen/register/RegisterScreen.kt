@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.example.appvozamiga.R
 import androidx.compose.ui.platform.LocalContext
 import com.example.appvozamiga.ViewModels.RegisterViewModel
-import com.example.appvozamiga.repository.fireBase.setUserRegistered
+import com.example.appvozamiga.repository.mongodb.saveSignInEmail
 
 
 @Composable
@@ -56,7 +56,6 @@ fun RegisterScreen(viewModel: RegisterViewModel, onRegisterComplete: () -> Unit)
                 .align(Alignment.TopCenter)
                 .padding(16.dp),
             viewModel = viewModel,
-            onRegisterComplete = onRegisterComplete
         )
     }
 }
@@ -66,7 +65,6 @@ fun RegisterScreen(viewModel: RegisterViewModel, onRegisterComplete: () -> Unit)
 fun Register(
     modifier: Modifier,
     viewModel: RegisterViewModel,
-    onRegisterComplete: () -> Unit
 ) {
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState
@@ -136,6 +134,7 @@ fun Register(
 
         Button(
             onClick = {
+                saveSignInEmail(context, email)
                 viewModel.registerUser(
                     name = name,
                     lastName = lastName,
@@ -170,25 +169,6 @@ fun Register(
     }
 }
 
-
-@Composable
-fun RegisterButton(enabled: Boolean, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-        enabled = enabled,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFA4937F),
-            contentColor = Color.White,
-            disabledContainerColor = Color(0xFFA4937F).copy(alpha = 0.5f),
-            disabledContentColor = Color.White.copy(alpha = 0.7f)
-        )
-    ) {
-        Text(text = "Registrar")
-    }
-}
 
 @Composable
 fun HeaderImage(modifier: Modifier = Modifier) {
