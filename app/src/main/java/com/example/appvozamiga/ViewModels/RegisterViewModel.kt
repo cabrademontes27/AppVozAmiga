@@ -10,30 +10,19 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.appvozamiga.repository.fireBase.AuthRepositorySms
-import com.example.appvozamiga.repository.fireBase.AuthRepositoryEmail
-import com.example.appvozamiga.repository.fireBase.getUserEmail
-import com.example.appvozamiga.repository.fireBase.isUserRegistered
-import com.example.appvozamiga.repository.fireBase.setUserRegistered
+import com.example.appvozamiga.repository.mongodb.getUserEmail
+import com.example.appvozamiga.repository.mongodb.isUserRegistered
+import com.example.appvozamiga.repository.mongodb.setUserRegistered
 import com.example.appvozamiga.repository.mongodb.MongoUserRepository
 import com.example.appvozamiga.repository.mongodb.models.Location
 import com.example.appvozamiga.repository.mongodb.models.UserData
-import com.google.firebase.auth.ActionCodeSettings
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.PhoneAuthCredential
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.net.URL
 
 class RegisterViewModel : ViewModel() {
 
     //  Firebase
-    //private val firebaseAuthRepo = AuthRepositorySms()
     private val _uiState = mutableStateOf(RegisterUiState())
     val uiState: State<RegisterUiState> = _uiState
-    private val auth = FirebaseAuth.getInstance()
-    private val firebaseAuthEmailRepo = AuthRepositoryEmail()
 
     //  formulario
     private val _name = MutableLiveData("")
@@ -156,11 +145,9 @@ class RegisterViewModel : ViewModel() {
         // Guardar en SharedPreferences como respaldo
         saveUserDataToPrefs(context)
 
-        // Crear el objeto UserData
         val location = Location(state, municipality, colony, street)
         val user = UserData(name, lastName, secondLastName, email, telephone, birthDay, location)
 
-        // Enviar a MongoDB
         viewModelScope.launch {
             val success = MongoUserRepository.registerUser(user)
             if (success) {
@@ -171,11 +158,14 @@ class RegisterViewModel : ViewModel() {
                     "Registro exitoso. Revisa tu correo para verificar.",
                     Toast.LENGTH_LONG
                 ).show()
+
+                verificarConReintentos(context)
             } else {
                 Log.e("RegisterViewModel", "Error al registrar usuario en MongoDB")
             }
         }
     }
+
 
     //aqui verificamos que el link ya se haya verificado o sifo abierto
     fun setUserVerified(context: Context) {
@@ -202,66 +192,44 @@ class RegisterViewModel : ViewModel() {
     }
 
     fun verificarToken(tokenId: String, context: Context) {
-        val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-        val url = "https://api-node-0kfj.onrender.com/verify?id=$tokenId"
-
         viewModelScope.launch {
             try {
-                val result = URL(url).readText()
+                val result = MongoUserRepository.verifyToken(tokenId)
+                Log.d("RegisterViewModel", "Resultado backend al verificar token: $result")
+
 
                 if (result == "valid") {
+                    val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
                     prefs.edit()
                         .putBoolean("is_registered", true)
                         .putString("user_token", tokenId)
                         .apply()
 
-                    setUserRegistered(context) // ← Aquí marcas que el usuario está registrado
-                    setUserVerified(context)   // ← Esto actualiza el estado del UI
+                    setUserRegistered(context)
+                    setUserVerified(context)
                     goToMainMenu()
 
-                    Log.d("RegisterViewModel", "✅ Token verificado correctamente")
+                    Log.d("RegisterViewModel", "Token verificado correctamente")
                 } else {
-                    Log.e("RegisterViewModel", "❌ Token inválido")
+                    Log.e("RegisterViewModel", "Token inválido o no recibido")
                 }
             } catch (e: Exception) {
-                Log.e("RegisterViewModel", "❌ Error conectando con backend", e)
+                Log.e("RegisterViewModel", "Error verificando token", e)
             }
         }
     }
 
     fun handleStartupIntent(intent: Intent?, context: Context) {
         val tokenId = intent?.data?.getQueryParameter("id")
+        Log.d("RegisterViewModel", "Token recibido desde intent: $tokenId")
+
 
         if (tokenId != null) {
             verificarToken(tokenId, context)
         } else if (!isUserRegistered(context)) {
-            val email = getUserEmail(context)
-            if (email != null) {
-                verificarEstadoDesdeBackend(email, context)
-            }
+            verificarEstadoDesdeBackend(context)
         }
     }
-    private fun verificarEstadoDesdeBackend(email: String, context: Context) {
-        val url = "https://api-node-0kfj.onrender.com/api/checkVerified?email=$email"
-
-        viewModelScope.launch {
-            try {
-                val resultado = withContext(Dispatchers.IO) { URL(url).readText() }
-
-                if (resultado.contains("true")) {
-                    setUserRegistered(context)
-                    setUserVerified(context)
-                    goToMainMenu()
-                    Log.d("RegisterViewModel", "✔️ El correo ya estaba verificado desde antes")
-                } else {
-                    Log.d("RegisterViewModel", "❌ El correo aún no ha sido verificado")
-                }
-            } catch (e: Exception) {
-                Log.e("RegisterViewModel", "❌ Error conectando con backend", e)
-            }
-        }
-    }
-
     //esta parte actulizara los datos que reciba el main y lo mandarra
     // al navigation
 
@@ -271,6 +239,51 @@ class RegisterViewModel : ViewModel() {
     }
     fun resetNavigationFlag() {
         _uiState.value = _uiState.value.copy(shouldNavigateToMenu = false)
+    }
+
+
+    fun verificarEstadoDesdeBackend(context: Context) {
+        val email = getUserEmail(context) ?: return
+        Log.d("RegisterViewModel", "Consultando verificación para: $email")
+
+        viewModelScope.launch {
+            try {
+                val response = MongoUserRepository.checkEmailVerified(email)
+
+                if (response?.verified == true) {
+                    setUserRegistered(context)
+                    setUserVerified(context)
+                    goToMainMenu()
+                } else {
+                    Log.d("RegisterViewModel", "El correo aún no ha sido verificado")
+                }
+            } catch (e: Exception) {
+                Log.e("RegisterViewModel", "Error verificando email con Retrofit", e)
+            }
+        }
+    }
+
+    private fun verificarConReintentos(context: Context) {
+        val email = _email.value ?: return
+
+        viewModelScope.launch {
+            repeat(6) { intento ->
+                val response = MongoUserRepository.checkEmailVerified(email)
+
+                if (response?.verified == true) {
+                    setUserRegistered(context)
+                    setUserVerified(context)
+                    goToMainMenu()
+                    Log.d("RegisterViewModel", "Verificación detectada en intento ${intento + 1}")
+                    return@launch
+                }
+
+                Log.d("RegisterViewModel", "Intento ${intento + 1}: aún no verificado")
+                kotlinx.coroutines.delay(10000)
+            }
+
+            Log.d("RegisterViewModel", "No se verificó después de varios intentos")
+        }
     }
 
 }

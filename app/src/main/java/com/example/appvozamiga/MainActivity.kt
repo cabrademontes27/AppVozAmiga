@@ -3,8 +3,8 @@ package com.example.appvozamiga
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.example.appvozamiga.ui.Navigation.AppNavigation
 import androidx.activity.viewModels
+import com.example.appvozamiga.ui.Navigation.AppNavigation
 import com.example.appvozamiga.ViewModels.RegisterViewModel
 
 class MainActivity : ComponentActivity() {
