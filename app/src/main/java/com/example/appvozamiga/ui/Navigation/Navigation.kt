@@ -7,9 +7,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.appvozamiga.MainActivity
 import com.example.appvozamiga.ViewModels.RegisterViewModel
-import com.example.appvozamiga.repository.fireBase.isUserRegistered
+import com.example.appvozamiga.repository.mongodb.isUserRegistered
 import com.example.appvozamiga.ui.Screen.Menu.MainMenuScreen
 import com.example.appvozamiga.ui.Screen.Menu.functions.AboutMeScreen
 import com.example.appvozamiga.ui.Screen.Menu.functions.CameraScreen
@@ -53,29 +52,30 @@ fun AppNavigation() {
             val registerViewModel: RegisterViewModel = viewModel()
             val state = registerViewModel.uiState.value
 
-            when {
-                state.isLoading -> {
-                    LoadingScreen()
-                }
+            LaunchedEffect(Unit) {
+                registerViewModel.verificarEstadoDesdeBackend(context)
+            }
 
-                state.shouldNavigateToMenu -> {
-                    LaunchedEffect(Unit) {
-                        registerViewModel.resetNavigationFlag()
-                        navController.navigate(Routes.MAIN_MENU) {
-                            popUpTo(Routes.REGISTER) { inclusive = true }
-                        }
+            RegisterScreen(viewModel = registerViewModel) {}
+
+            if (state.isLoading) {
+                LoadingScreen()
+            }
+
+            if (state.isVerified) {
+                SuccessScreen(onFinish = {})
+            }
+
+            LaunchedEffect(state.shouldNavigateToMenu) {
+                if (state.shouldNavigateToMenu) {
+                    registerViewModel.resetNavigationFlag()
+                    navController.navigate(Routes.MAIN_MENU) {
+                        popUpTo(Routes.REGISTER) { inclusive = true }
                     }
-                }
-
-                state.isVerified -> {
-                    SuccessScreen(onFinish = { /* no navegar manualmente */ })
-                }
-
-                else -> {
-                    RegisterScreen(viewModel = registerViewModel) { }
                 }
             }
         }
+
 
         composable(Routes.SUCCESS) {
             SuccessScreen(onFinish = {
@@ -85,12 +85,10 @@ fun AppNavigation() {
             })
         }
 
-        // Main menu screen
         composable(Routes.MAIN_MENU) {
             MainMenuScreen(navController = navController)
         }
 
-        // Intermediate loading transitions
         composable(Routes.LOADING_TO_DRUGS) {
             LoadingRedirectScreen(navController, Routes.DRUGS)
         }
@@ -104,7 +102,6 @@ fun AppNavigation() {
             LoadingRedirectScreen(navController, Routes.ABOUT_ME)
         }
 
-        // Final destination screens
         composable(Routes.DRUGS) {
             DrugsScreen(navController)
         }
@@ -117,8 +114,5 @@ fun AppNavigation() {
         composable(Routes.ABOUT_ME) {
             AboutMeScreen(navController)
         }
-
-
-
     }
 }
