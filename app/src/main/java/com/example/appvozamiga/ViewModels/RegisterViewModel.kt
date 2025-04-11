@@ -267,7 +267,7 @@ class RegisterViewModel : ViewModel() {
         val email = _email.value ?: return
 
         viewModelScope.launch {
-            repeat(6) { intento ->
+            repeat(10) { intento ->
                 val response = MongoUserRepository.checkEmailVerified(email)
 
                 if (response?.verified == true) {
