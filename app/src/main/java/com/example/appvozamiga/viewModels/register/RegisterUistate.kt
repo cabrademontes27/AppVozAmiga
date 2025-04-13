@@ -1,4 +1,4 @@
-package com.example.appvozamiga.viewModels
+package com.example.appvozamiga.viewModels.register
 
 // aqui se verifican los estados en los que se encuentran cada proceso, si hay un error u otra cosa
 // si se esta haciendo una operacion o si se mando el codigo
