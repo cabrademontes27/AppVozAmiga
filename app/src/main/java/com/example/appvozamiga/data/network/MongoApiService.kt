@@ -6,6 +6,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Query
 
 interface MongoApiService {
@@ -18,6 +19,13 @@ interface MongoApiService {
 
     @GET("verify")
     suspend fun verifyToken(@Query("id") tokenId: String): Response<String>
+
+    @PUT("/api/updateUser")
+    suspend fun updateUser(@Body user: UserData): Response<Unit>
+
+    @GET("api/getUserByEmail")
+    suspend fun getUserByEmail(@Query("email") email: String): Response<UserData>
+
 
 
 }
