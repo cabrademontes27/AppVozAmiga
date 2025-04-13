@@ -10,6 +10,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -30,7 +31,15 @@ import com.google.android.gms.location.Priority
 import kotlinx.coroutines.launch
 import java.util.Locale
 import com.example.appvozamiga.data.models.Location as UserLocation
-
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import java.util.*
+import com.google.android.gms.location.*
+import com.example.appvozamiga.data.models.Medicamento
+import com.example.appvozamiga.data.models.loadMedicamentos
+import com.example.appvozamiga.data.models.saveMedicamentos
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -40,7 +49,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     var locationText by mutableStateOf("Obteniendo ubicación...")
+
         private set
+    var drugsUiState by mutableStateOf(DrugsUiState())
+        private set
+
 
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(application)
@@ -296,11 +309,132 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // esta parte se refiere a la logica de los medicamentos
+
+    fun agregarMedicamento(nombre: String, descripcion: String) {
+        val correo = email.value  // asegúrate que ya está inicializado antes
+        val nuevo = Medicamento(nombre, descripcion, correo)
+        val nuevaLista = drugsUiState.medicamentos + nuevo
+        drugsUiState = drugsUiState.copy(medicamentos = nuevaLista)
+
+        guardarMedicamentosEnLocal(appContext)
+    }
+
+    fun editarDescripcion(med: Medicamento, nuevaDescripcion: String) {
+        val actualizados = drugsUiState.medicamentos.map {
+            if (it == med) it.copy(descripcion = nuevaDescripcion)
+            else it
+        }
+        drugsUiState = drugsUiState.copy(medicamentos = actualizados)
+        guardarMedicamentosEnLocal(appContext)
+    }
+
+    fun guardarMedicamentosEnLocal(context: Context) {
+        saveMedicamentos(context, drugsUiState.medicamentos)
+    }
+
+    fun cargarMedicamentosDeLocal(context: Context) {
+        val cargados = loadMedicamentos(context)
+        drugsUiState = drugsUiState.copy(medicamentos = cargados)
+    }
+
+
+    fun agregarMedicamentoBackend(context: Context, nombre: String, descripcion: String) {
+        val correo = email.value
+        if (correo.isBlank()) {
+            Log.e("MainViewModel", "❌ No se puede agregar: email vacío")
+            Toast.makeText(context, "⚠️ Error: tu correo no está cargado aún", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val nuevo = Medicamento(nombre, descripcion, correo)
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.addMedicamento(nuevo)
+                if (response.isSuccessful) {
+                    cargarMedicamentosDesdeBackend(context)
+                    Log.d("MainViewModel", "✅ Medicamento agregado")
+                } else {
+                    Log.e("MainViewModel", "❌ Error al guardar medicamento: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error al agregar medicamento: ${e.message}")
+            }
+        }
+    }
+
+    fun cargarMedicamentosDesdeBackend(context: Context) {
+        val correo = email.value
+        if (correo.isBlank()) {
+            Log.e("MainViewModel", "❌ No se puede cargar: email vacío")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.getMedicamentos(correo)
+                if (response.isSuccessful) {
+                    val lista = response.body() ?: emptyList()
+                    drugsUiState = drugsUiState.copy(medicamentos = lista)
+                    saveMedicamentos(context, lista)
+                    Log.d("MainViewModel", "✅ Medicamentos cargados desde backend")
+                } else {
+                    Log.e("MainViewModel", "❌ Error al cargar medicamentos: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error al obtener medicamentos: ${e.message}")
+            }
+        }
+    }
 
 
 
+    fun editarMedicamentoBackend(context: Context, medicamento: Medicamento, nuevaDescripcion: String) {
+        val actualizado = medicamento.copy(descripcion = nuevaDescripcion)
 
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.updateMedicamento(actualizado._id!!, actualizado)
+                if (response.isSuccessful) {
+                    val nuevaLista = drugsUiState.medicamentos.map {
+                        if (it._id == actualizado._id) actualizado else it
+                    }
+                    drugsUiState = drugsUiState.copy(medicamentos = nuevaLista)
+                    saveMedicamentos(context, nuevaLista)
+                    Log.d("MainViewModel", "✅ Medicamento editado")
+                } else {
+                    Log.e("MainViewModel", "❌ Error al editar medicamento")
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error de red al editar: ${e.message}")
+            }
+        }
+    }
 
+    fun eliminarMedicamento(context: Context, medicamento: Medicamento) {
+        val id = medicamento._id
+        if (id.isNullOrBlank()) {
+            Log.e("MainViewModel", "❌ No se puede eliminar: ID nulo")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.deleteMedicamento(id)
+                if (response.isSuccessful) {
+                    val actualizados = drugsUiState.medicamentos.filterNot { it._id == id }
+                    drugsUiState = drugsUiState.copy(medicamentos = actualizados)
+                    saveMedicamentos(context, actualizados)
+                    Log.d("MainViewModel", "✅ Medicamento eliminado del backend y local")
+                } else {
+                    Log.e("MainViewModel", "❌ Falló al eliminar medicamento: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error eliminando medicamento: ${e.message}")
+            }
+        }
+    }
 
 
 }
