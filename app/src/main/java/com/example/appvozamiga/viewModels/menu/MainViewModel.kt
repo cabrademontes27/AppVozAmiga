@@ -2,20 +2,34 @@ package com.example.appvozamiga.viewModels.menu
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.content.Context
 import android.graphics.Bitmap
 import android.location.Geocoder
 import android.location.Location
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Looper
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.appvozamiga.data.models.UserData
+import com.example.appvozamiga.data.models.getUserEmail
+import com.example.appvozamiga.data.models.loadUserProfile
+import com.example.appvozamiga.data.models.saveUserProfile
+import com.example.appvozamiga.data.repository.MongoUserRepository
 import com.example.appvozamiga.utils.TextRecognitionUtils
-import java.util.Locale
-import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.Priority
+import kotlinx.coroutines.launch
+import java.util.Locale
+import com.example.appvozamiga.data.models.Location as UserLocation
+
+
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -27,6 +41,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(application)
+
+    var name = mutableStateOf("")
+    var lastName = mutableStateOf("")
+    var secondLastName = mutableStateOf("")
+    var email = mutableStateOf("")
+    var telephone = mutableStateOf("")
+    var birthDay = mutableStateOf("")
+    var state = mutableStateOf("")
+    var municipality = mutableStateOf("")
+    var colony = mutableStateOf("")
+    var street = mutableStateOf("")
+
 
 
     //aqui es solo la parte visual de funcion de la camara,
@@ -107,4 +133,96 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             locationText = "Error al obtener la dirección: ${e.message}"
         }
     }
+
+    // aqui se verificara si hay internet para actulizar los datos si se cambiarn
+    // si no pues no JAJAJA
+
+    fun actualizarPerfil(context: Context, userData: UserData) {
+        if (hayInternetDisponible(context)) {
+            viewModelScope.launch {
+                try {
+                    MongoUserRepository.updateUser(userData)
+                    Log.d("MainViewModel", "Datos sincronizados con backend")
+                } catch (e: Exception) {
+                    Log.e("MainViewModel", "Error al sincronizar: ${e.message}")
+                }
+            }
+        } else {
+            guardarDatosLocalmente(context, userData)
+        }
+    }
+
+    fun guardarDatosLocalmente(context: Context, userData: UserData) {
+        saveUserProfile(context, userData)
+    }
+
+    fun cargarDatosGuardados(context: Context) {
+        val user = loadUserProfile(context) ?: return
+        cargarValoresDesde(user)
+    }
+
+
+    private fun cargarValoresDesde(user: UserData) {
+        name.value = user.name
+        lastName.value = user.lastName
+        secondLastName.value = user.secondLastName
+        email.value = user.email
+        telephone.value = user.telephone
+        birthDay.value = user.birthDay
+        state.value = user.location.state
+        municipality.value = user.location.municipality
+        colony.value = user.location.colony
+        street.value = user.location.street
+    }
+
+    fun hayInternetDisponible(context: Context): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    fun checkAndLoadProfile(context: Context) {
+        val correo = getUserEmail(context)
+        if (correo != null && hayInternetDisponible(context)) {
+            viewModelScope.launch {
+                try {
+                    Log.d("MainViewModel", "Buscando usuario con correo: $correo")
+
+                    val user = MongoUserRepository.getUserByEmail(correo)
+                    if (user != null) {
+                        // Guardar en memoria
+                        name.value = user.name
+                        lastName.value = user.lastName
+                        secondLastName.value = user.secondLastName
+                        email.value = user.email
+                        telephone.value = user.telephone
+                        birthDay.value = user.birthDay
+                        state.value = user.location.state
+                        municipality.value = user.location.municipality
+                        colony.value = user.location.colony
+                        street.value = user.location.street
+
+                        // Guardar en local
+                        saveUserProfile(context, user)
+
+                        Log.d("MainViewModel", "✅ Datos cargados desde backend")
+                    } else {
+                        Log.e("MainViewModel", "⚠️ Usuario no encontrado en backend")
+                        cargarDatosGuardados(context)
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainViewModel", "❌ Error obteniendo usuario: ${e.message}")
+                    cargarDatosGuardados(context)
+                }
+            }
+        } else {
+            Log.d("MainViewModel", "🌐 Sin conexión o sin correo guardado")
+            cargarDatosGuardados(context)
+        }
+    }
+
+
+
+
 }
