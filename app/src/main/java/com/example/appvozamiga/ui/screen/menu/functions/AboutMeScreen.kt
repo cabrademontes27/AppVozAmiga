@@ -39,6 +39,8 @@ import com.example.appvozamiga.data.models.getUserEmail
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutMeScreen(navController: NavController) {
+    var showEditDialog by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
     val mainViewModel: MainViewModel = viewModel(factory = viewModelFactory {
         initializer { MainViewModel(context.applicationContext as Application) }
@@ -103,6 +105,20 @@ fun AboutMeScreen(navController: NavController) {
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        IconButton(onClick = { showEditDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Editar perfil",
+                                tint = AccentText
+                            )
+                        }
+                    }
                     Box(
                         modifier = Modifier
                             .size(100.dp)
@@ -164,6 +180,13 @@ fun AboutMeScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+        if (showEditDialog) {
+            EditProfileDialog(
+                mainViewModel = mainViewModel,
+                onDismiss = { showEditDialog = false }
+            )
+        }
+
     }
 }
 
