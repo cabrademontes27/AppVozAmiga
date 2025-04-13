@@ -1,7 +1,7 @@
-package com.example.appvozamiga.voice
+package com.example.appvozamiga.data.network
 
 import com.example.appvozamiga.data.models.UserData
-import com.example.appvozamiga.voice.models.VerificationStatus
+import com.example.appvozamiga.data.network.VerificationStatus
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

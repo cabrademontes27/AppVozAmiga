@@ -1,4 +1,4 @@
-package com.example.appvozamiga.repository.models
+package com.example.appvozamiga.data.models
 
 
 import android.content.Context

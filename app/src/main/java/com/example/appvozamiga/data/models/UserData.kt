@@ -1,4 +1,4 @@
-package com.example.appvozamiga.voice.models
+package com.example.appvozamiga.data.models
 
 data class UserData(
     val name: String,

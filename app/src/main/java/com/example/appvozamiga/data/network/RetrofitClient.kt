@@ -1,4 +1,4 @@
-package com.example.appvozamiga.voice
+package com.example.appvozamiga.data.network
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

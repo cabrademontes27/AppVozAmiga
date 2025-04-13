@@ -1,8 +1,9 @@
-package com.example.appvozamiga.voice
+package com.example.appvozamiga.data.repository
 
 import android.util.Log
 import com.example.appvozamiga.data.models.UserData
-import com.example.appvozamiga.voice.models.VerificationStatus
+import com.example.appvozamiga.data.network.RetrofitClient
+import com.example.appvozamiga.data.network.VerificationStatus
 
 object MongoUserRepository {
 
