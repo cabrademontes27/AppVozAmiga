@@ -44,6 +44,7 @@ android {
 
 dependencies {
 
+    implementation("androidx.compose.material:material-icons-extended")
     implementation ("com.google.android.gms:play-services-location:21.0.1")
     implementation ("androidx.activity:activity-compose:1.8.0")
     implementation ("com.google.mlkit:text-recognition:16.0.1")
