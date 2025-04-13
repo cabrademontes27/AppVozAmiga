@@ -1,4 +1,4 @@
-package com.example.appvozamiga.ui.Navigation
+package com.example.appvozamiga.ui.navigation
 
 object Routes {
     // Navegación principal

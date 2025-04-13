@@ -1,4 +1,4 @@
-package com.example.appvozamiga.ui.Navigation
+package com.example.appvozamiga.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -7,18 +7,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.appvozamiga.ViewModels.RegisterViewModel
-import com.example.appvozamiga.repository.mongodb.isUserRegistered
-import com.example.appvozamiga.ui.Screen.Menu.MainMenuScreen
-import com.example.appvozamiga.ui.Screen.Menu.functions.AboutMeScreen
-import com.example.appvozamiga.ui.Screen.Menu.functions.CameraScreen
-import com.example.appvozamiga.ui.Screen.Menu.functions.DrugsScreen
-import com.example.appvozamiga.ui.Screen.Menu.functions.UbicationScreen
-import com.example.appvozamiga.ui.Screen.register.RegisterScreen
-import com.example.appvozamiga.ui.Screen.splash.LoadingRedirectScreen
-import com.example.appvozamiga.ui.Screen.splash.LoadingScreen
-import com.example.appvozamiga.ui.Screen.splash.SplashScreen
-import com.example.appvozamiga.ui.Screen.splash.SuccessScreen
+import com.example.appvozamiga.viewModels.register.RegisterViewModel
+import com.example.appvozamiga.data.models.isUserRegistered
+import com.example.appvozamiga.ui.screen.menu.MainMenuScreen
+import com.example.appvozamiga.ui.screen.menu.functions.AboutMeScreen
+import com.example.appvozamiga.ui.screen.menu.functions.CameraScreen
+import com.example.appvozamiga.ui.screen.menu.functions.DrugsScreen
+import com.example.appvozamiga.ui.screen.menu.functions.UbicationScreen
+import com.example.appvozamiga.ui.screen.register.RegisterScreen
+import com.example.appvozamiga.ui.screen.splash.LoadingRedirectScreen
+import com.example.appvozamiga.ui.screen.splash.LoadingScreen
+import com.example.appvozamiga.ui.screen.splash.SplashScreen
+import com.example.appvozamiga.ui.screen.splash.SuccessScreen
 import kotlinx.coroutines.delay
 
 @Composable
