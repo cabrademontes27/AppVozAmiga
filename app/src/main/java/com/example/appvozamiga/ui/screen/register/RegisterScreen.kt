@@ -1,4 +1,4 @@
-package com.example.appvozamiga.ui.Screen.register
+package com.example.appvozamiga.ui.screen.register
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
@@ -42,8 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.appvozamiga.R
 import androidx.compose.ui.platform.LocalContext
-import com.example.appvozamiga.ViewModels.RegisterViewModel
-import com.example.appvozamiga.repository.mongodb.saveSignInEmail
+import com.example.appvozamiga.viewModels.register.RegisterViewModel
+import com.example.appvozamiga.data.models.saveSignInEmail
 
 
 @Composable

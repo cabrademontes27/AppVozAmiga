@@ -1,4 +1,4 @@
-package com.example.appvozamiga.ui.Screen.Menu.functions
+package com.example.appvozamiga.ui.screen.menu.functions
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -15,17 +15,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.navigation.NavController
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.appvozamiga.ui.Navigation.Routes
+import com.example.appvozamiga.ui.navigation.Routes
 import com.example.appvozamiga.R
 import androidx.compose.runtime.getValue
 

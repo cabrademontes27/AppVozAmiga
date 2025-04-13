@@ -1,4 +1,4 @@
-package com.example.appvozamiga.ui.Screen.Menu
+package com.example.appvozamiga.ui.screen.menu
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,12 +21,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.appvozamiga.R
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavController
-import com.example.appvozamiga.ui.Navigation.Routes
+import com.example.appvozamiga.ui.navigation.Routes
 
 
 //empezar a recrear la imagen de todo lo que contendra el mainMenu
@@ -39,18 +38,18 @@ data class MenuItem(
 @Composable
 fun MainMenuScreen(navController: NavController) {
     val menuItems = listOf(
-        MenuItem("Drugs", painterResource(R.drawable.icon_medicament), Color(0xFF5D9CEC)),
-        MenuItem("Location", painterResource(R.drawable.icons_ubicacion), Color(0xFF4BC1A5)),
-        MenuItem("Camera", painterResource(R.drawable.camara_icon), Color(0xFFF6BB42)),
-        MenuItem("About Me", painterResource(R.drawable.profile), Color(0xFFE9573F))
+        MenuItem("Medicamentos", painterResource(R.drawable.icon_medicament), Color(0xFF5D9CEC)),
+        MenuItem("¿Dónde estoy?", painterResource(R.drawable.icons_ubicacion), Color(0xFF4BC1A5)),
+        MenuItem("Leer medicamentos", painterResource(R.drawable.camara_icon), Color(0xFFF6BB42)),
+        MenuItem("Acerca de mi", painterResource(R.drawable.profile), Color(0xFFE9573F))
     )
 
     // Mapa para rutas
     val navigationMap = mapOf(
-        "Drugs" to Routes.LOADING_TO_DRUGS,
-        "Location" to Routes.LOADING_TO_LOCATION,
-        "Camera" to Routes.LOADING_TO_CAMERA,
-        "About Me" to Routes.LOADING_TO_ABOUT_ME
+        "Medicamentos" to Routes.LOADING_TO_DRUGS,
+        "¿Dónde estoy?" to Routes.LOADING_TO_LOCATION,
+        "Leer medicamentos" to Routes.LOADING_TO_CAMERA,
+        "Acerca de mi" to Routes.LOADING_TO_ABOUT_ME
     )
 
     val gridState = rememberLazyGridState()

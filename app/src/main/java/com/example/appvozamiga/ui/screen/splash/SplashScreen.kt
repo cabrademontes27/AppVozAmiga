@@ -1,4 +1,4 @@
-package com.example.appvozamiga.ui.Screen.splash
+package com.example.appvozamiga.ui.screen.splash
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.RepeatMode

@@ -1,9 +1,9 @@
-package com.example.appvozamiga.ui.Screen.splash
+package com.example.appvozamiga.ui.screen.splash
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavController
-import com.example.appvozamiga.ui.Navigation.Routes
+import com.example.appvozamiga.ui.navigation.Routes
 
 
 @Composable
