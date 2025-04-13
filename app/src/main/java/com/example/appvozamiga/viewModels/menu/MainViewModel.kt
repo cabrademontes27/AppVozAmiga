@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appvozamiga.data.models.UserData
+import com.example.appvozamiga.data.models.clearUserPrefs
 import com.example.appvozamiga.data.models.getUserEmail
 import com.example.appvozamiga.data.models.loadUserProfile
 import com.example.appvozamiga.data.models.saveUserProfile
@@ -277,6 +278,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
         )
     }
+
+    fun eliminarCuenta(context: Context) {
+        viewModelScope.launch {
+            try {
+                val email = this@MainViewModel.email.value
+                val response = RetrofitClient.apiService.deleteUserByEmail(email)
+                if (response.isSuccessful) {
+                    clearUserPrefs(context) // limpia SharedPreferences
+                    println("✅ Cuenta eliminada correctamente")
+                } else {
+                    println("❌ No se pudo eliminar: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
 
 
 
