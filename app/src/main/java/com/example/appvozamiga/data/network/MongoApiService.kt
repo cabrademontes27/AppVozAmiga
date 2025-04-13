@@ -4,6 +4,7 @@ import com.example.appvozamiga.data.models.UserData
 import com.example.appvozamiga.data.network.VerificationStatus
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -25,6 +26,9 @@ interface MongoApiService {
 
     @GET("api/getUserByEmail")
     suspend fun getUserByEmail(@Query("email") email: String): Response<UserData>
+
+    @DELETE("api/deleteUser")
+    suspend fun deleteUserByEmail(@Query("email") email: String): Response<Unit>
 
 
 
