@@ -39,4 +39,24 @@ object MongoUserRepository {
             null
         }
     }
+
+    suspend fun updateUser(user: UserData): Boolean {
+        return try {
+            val response = RetrofitClient.apiService.updateUser(user)
+            response.isSuccessful
+        } catch (e: Exception) {
+            Log.e("MongoRepo", "Error actualizando usuario: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun getUserByEmail(email: String): UserData? {
+        return try {
+            val response = RetrofitClient.apiService.getUserByEmail(email)
+            if (response.isSuccessful) response.body() else null
+        } catch (e: Exception) {
+            Log.e("MongoRepo", "Error al obtener usuario: ${e.message}")
+            null
+        }
+    }
 }
