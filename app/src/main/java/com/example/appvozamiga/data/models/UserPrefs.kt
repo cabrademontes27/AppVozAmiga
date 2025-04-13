@@ -2,10 +2,13 @@ package com.example.appvozamiga.data.models
 
 
 import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 private const val PREFS_NAME = "user_prefs"
 private const val KEY_IS_REGISTERED = "is_registered"
 private const val KEY_EMAIL_FOR_SIGNIN = "email_for_signin" // Ahora usado para verificar estado si se cierra app
+private const val KEY_MEDICAMENTOS = "medicamentos_guardados"
 
 fun setUserRegistered(context: Context) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -67,5 +70,26 @@ fun loadUserProfile(context: Context): UserData? {
     val location = Location(state, municipality, colony, street)
 
     return UserData(name, lastName, secondLastName, email, telephone, birthDay, location)
+}
+
+// aqui guardaremos las preferencias o de forma local pero para medicamentos
+// despues moverlo hacia otra carpeta
+
+
+fun saveMedicamentos(context: Context, lista: List<Medicamento>) {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val json = Gson().toJson(lista)
+    prefs.edit().putString(KEY_MEDICAMENTOS, json).apply()
+}
+
+fun loadMedicamentos(context: Context): List<Medicamento> {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val json = prefs.getString(KEY_MEDICAMENTOS, null)
+    return if (json != null) {
+        val type = object : TypeToken<List<Medicamento>>() {}.type
+        Gson().fromJson(json, type)
+    } else {
+        emptyList()
+    }
 }
 
