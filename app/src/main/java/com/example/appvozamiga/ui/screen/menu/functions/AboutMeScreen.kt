@@ -39,6 +39,7 @@ import com.example.appvozamiga.data.models.getUserEmail
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutMeScreen(navController: NavController) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -178,12 +179,46 @@ fun AboutMeScreen(navController: NavController) {
             SimpleContactCard("Carlos Méndez", "Papá", "+52 921 111 2233", CardColor, AccentText, SubtleText, PrimaryColor)
             SimpleContactCard("Valeria Torres", "Amiga", "+52 921 444 7890", CardColor, AccentText, SubtleText, PrimaryColor)
 
+
+            Button(
+                onClick = { showDeleteDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp)
+            ) {
+                Text("Eliminar Cuenta", color = Color.White)
+            }
             Spacer(modifier = Modifier.height(32.dp))
         }
         if (showEditDialog) {
             EditProfileDialog(
                 mainViewModel = mainViewModel,
                 onDismiss = { showEditDialog = false }
+            )
+        }
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Confirmar eliminación") },
+                text = { Text("¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        mainViewModel.eliminarCuenta(context)
+                        navController.navigate("Register") {
+                            popUpTo("AboutMe") { inclusive = true }
+                        }
+                    }) {
+                        Text("Eliminar", color = Color.Red)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Cancelar")
+                    }
+                }
             )
         }
 
