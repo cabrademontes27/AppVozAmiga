@@ -1,4 +1,4 @@
-package com.example.appvozamiga.repository.mongodb
+package com.example.appvozamiga.voice
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

@@ -1,4 +1,4 @@
-package com.example.appvozamiga.repository.mongodb.models
+package com.example.appvozamiga.voice.models
 
 data class UserData(
     val name: String,

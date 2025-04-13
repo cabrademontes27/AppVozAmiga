@@ -1,8 +1,8 @@
-package com.example.appvozamiga.repository.mongodb
+package com.example.appvozamiga.voice
 
 import android.util.Log
-import com.example.appvozamiga.repository.mongodb.models.UserData
-import com.example.appvozamiga.repository.mongodb.models.VerificationStatus
+import com.example.appvozamiga.data.models.UserData
+import com.example.appvozamiga.voice.models.VerificationStatus
 
 object MongoUserRepository {
 

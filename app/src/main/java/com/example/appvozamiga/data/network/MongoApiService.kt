@@ -1,7 +1,7 @@
-package com.example.appvozamiga.repository.mongodb
+package com.example.appvozamiga.voice
 
-import com.example.appvozamiga.repository.mongodb.models.UserData
-import com.example.appvozamiga.repository.mongodb.models.VerificationStatus
+import com.example.appvozamiga.data.models.UserData
+import com.example.appvozamiga.voice.models.VerificationStatus
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

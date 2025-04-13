@@ -1,4 +1,4 @@
-package com.example.appvozamiga.repository.mongodb
+package com.example.appvozamiga.repository.models
 
 
 import android.content.Context
