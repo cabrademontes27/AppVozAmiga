@@ -21,11 +21,13 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import android.Manifest
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CameraScreen(navController: NavController) {
     val mainViewModel: MainViewModel = viewModel()
@@ -37,8 +39,6 @@ fun CameraScreen(navController: NavController) {
     val executor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
 
-
-    // 📌 Control del permiso
     val cameraPermissionGranted = remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -54,10 +54,18 @@ fun CameraScreen(navController: NavController) {
         cameraPermissionGranted.value = granted
     }
 
-    // 🚀 Solicitar permiso al entrar
     LaunchedEffect(Unit) {
         if (!cameraPermissionGranted.value) {
             launcher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    var showSnackbar by remember { mutableStateOf(false) }
+
+    if (showSnackbar) {
+        LaunchedEffect(Unit) {
+            Toast.makeText(context, "Medicamento agregado automáticamente", Toast.LENGTH_SHORT).show()
+            showSnackbar = false
         }
     }
 
@@ -71,7 +79,6 @@ fun CameraScreen(navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Vista previa de la cámara
                     AndroidView(
                         factory = { ctx ->
                             val previewView = PreviewView(ctx)
@@ -106,7 +113,6 @@ fun CameraScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Botón de captura
                     Button(onClick = {
                         val imageCaptureInstance = imageCapture ?: return@Button
 
@@ -117,6 +123,14 @@ fun CameraScreen(navController: NavController) {
                                     val bitmap = imageProxy.toBitmap()
                                     if (bitmap != null) {
                                         mainViewModel.processImage(bitmap)
+                                        val texto = mainViewModel.recognizedText
+                                        if (texto.isNotBlank()) {
+                                            mainViewModel.agregarMedicamento(
+                                                nombre = texto,
+                                                descripcion = "Detectado con cámara"
+                                            )
+                                            showSnackbar = true
+                                        }
                                     }
                                     imageProxy.close()
                                 }
@@ -132,7 +146,6 @@ fun CameraScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Resultado del texto reconocido
                     Text(
                         text = "Texto detectado:",
                         style = MaterialTheme.typography.titleMedium
@@ -144,7 +157,6 @@ fun CameraScreen(navController: NavController) {
                     )
                 }
             } else {
-                // Mensaje si no se otorga el permiso
                 Text(
                     text = "Se requiere permiso de cámara para usar esta función.",
                     style = MaterialTheme.typography.titleMedium,
