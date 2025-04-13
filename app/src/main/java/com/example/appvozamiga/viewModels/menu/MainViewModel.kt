@@ -17,6 +17,7 @@ import com.example.appvozamiga.data.models.UserData
 import com.example.appvozamiga.data.models.getUserEmail
 import com.example.appvozamiga.data.models.loadUserProfile
 import com.example.appvozamiga.data.models.saveUserProfile
+import com.example.appvozamiga.data.network.RetrofitClient
 import com.example.appvozamiga.data.repository.MongoUserRepository
 import com.example.appvozamiga.utils.TextRecognitionUtils
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -32,6 +33,7 @@ import com.example.appvozamiga.data.models.Location as UserLocation
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+    val appContext = application.applicationContext
 
     var recognizedText by mutableStateOf("Esperando captura...")
         private set
@@ -221,6 +223,63 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             cargarDatosGuardados(context)
         }
     }
+
+    // aqui se actualizaran los datos por si se desea modificar algo de nuestra vista
+    //de aboutme
+
+    fun actualizarDatosDesdeDialogo(
+        name: String,
+        lastName: String,
+        secondLastName: String,
+        birthDay: String,
+        telephone: String,
+        state: String,
+        municipality: String,
+        colony: String,
+        street: String
+    ) {
+        this.name.value = name
+        this.lastName.value = lastName
+        this.secondLastName.value = secondLastName
+        this.birthDay.value = birthDay
+        this.telephone.value = telephone
+        this.state.value = state
+        this.municipality.value = municipality
+        this.colony.value = colony
+        this.street.value = street
+
+        val user = buildUserData() // Tu método para crear un UserData con todos los campos
+
+        saveUserProfile(appContext, user)
+
+        viewModelScope.launch {
+            try {
+                RetrofitClient.apiService.updateUser(user) // esto lo armamos después
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun buildUserData(): UserData {
+        return UserData(
+            name = name.value,
+            lastName = lastName.value,
+            secondLastName = secondLastName.value,
+            email = email.value,
+            telephone = telephone.value,
+            birthDay = birthDay.value,
+            location = UserLocation(
+                state = state.value,
+                municipality = municipality.value,
+                colony = colony.value,
+                street = street.value
+            )
+        )
+    }
+
+
+
 
 
 
