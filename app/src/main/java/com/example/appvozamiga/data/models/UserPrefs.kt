@@ -76,17 +76,17 @@ fun loadUserProfile(context: Context): UserData? {
 // despues moverlo hacia otra carpeta
 
 
-fun saveMedicamentos(context: Context, lista: List<Medicamento>) {
+fun saveMedications(context: Context, lista: List<Medications>) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     val json = Gson().toJson(lista)
     prefs.edit().putString(KEY_MEDICAMENTOS, json).apply()
 }
 
-fun loadMedicamentos(context: Context): List<Medicamento> {
+fun loadMedications(context: Context): List<Medications> {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     val json = prefs.getString(KEY_MEDICAMENTOS, null)
     return if (json != null) {
-        val type = object : TypeToken<List<Medicamento>>() {}.type
+        val type = object : TypeToken<List<Medications>>() {}.type
         Gson().fromJson(json, type)
     } else {
         emptyList()

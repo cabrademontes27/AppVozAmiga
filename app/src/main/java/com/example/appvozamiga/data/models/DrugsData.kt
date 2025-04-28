@@ -1,8 +1,8 @@
 package com.example.appvozamiga.data.models
 
-data class Medicamento(
-    val nombre: String,
-    val descripcion: String,
-    val emailUsuario: String,
+data class Medications(
+    val name: String,
+    val description: String,
+    val emailUser: String,
     val _id: String? = null
 )
