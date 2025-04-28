@@ -11,7 +11,6 @@ import android.net.NetworkCapabilities
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appvozamiga.data.models.UserData
@@ -34,24 +33,21 @@ import com.example.appvozamiga.data.models.Location as UserLocation
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.layout.*
-import java.util.*
-import com.google.android.gms.location.*
-import com.example.appvozamiga.data.models.Medicamento
-import com.example.appvozamiga.data.models.loadMedicamentos
-import com.example.appvozamiga.data.models.saveMedicamentos
+import com.example.appvozamiga.data.models.Medications
+import com.example.appvozamiga.data.models.loadMedications
+import com.example.appvozamiga.data.models.saveMedications
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     val appContext = application.applicationContext
 
-    var recognizedText by mutableStateOf("Esperando captura...")
+    var recognizedText by mutableStateOf("")
         private set
 
     var locationText by mutableStateOf("Obteniendo ubicación...")
-
         private set
-    var drugsUiState by mutableStateOf(DrugsUiState())
+
+    var medicationsUiState by mutableStateOf(DrugsUiState())
         private set
 
 
@@ -106,7 +102,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // aqui va la funcion de ubicacion exacta de dodne me encuentro
     @SuppressLint("MissingPermission")
-    fun obtenerUbicacion() {
+    fun getLocation() {
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
             5000L
@@ -119,7 +115,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     fusedLocationClient.removeLocationUpdates(this)
                     val location: Location? = result.lastLocation
                     location?.let {
-                        convertirUbicacionATexto(it.latitude, it.longitude)
+                        covertLocationToText(it.latitude, it.longitude)
                     } ?: run {
                         locationText = "No se pudo obtener la ubicación."
                     }
@@ -130,18 +126,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // 🗺️ Convertir coordenadas a texto entendible
-    private fun convertirUbicacionATexto(lat: Double, lon: Double) {
+    private fun covertLocationToText(lat: Double, lon: Double) {
         val geocoder = Geocoder(getApplication(), Locale.getDefault())
         try {
-            val direccion = geocoder.getFromLocation(lat, lon, 1)
-            if (!direccion.isNullOrEmpty()) {
-                val dir = direccion[0]
-                val estado = dir.adminArea ?: ""
-                val ciudad = dir.locality ?: dir.subAdminArea ?: ""
-                val colonia = dir.subLocality ?: ""
-                val calle = dir.thoroughfare ?: ""
+            val location = geocoder.getFromLocation(lat, lon, 1)
+            if (!location.isNullOrEmpty()) {
+                val dir = location[0]
+                val state = dir.adminArea ?: ""
+                val city = dir.locality ?: dir.subAdminArea ?: ""
+                val colony = dir.subLocality ?: ""
+                val street = dir.thoroughfare ?: ""
 
-                locationText = "Estás en $estado, $ciudad en la colonia $colonia en la calle $calle"
+                locationText = "Estás en $state, $city en la colonia $colony en la calle $street"
             } else {
                 locationText = "No se encontró la dirección."
             }
@@ -153,8 +149,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // aqui se verificara si hay internet para actulizar los datos si se cambiarn
     // si no pues no JAJAJA
 
-    fun actualizarPerfil(context: Context, userData: UserData) {
-        if (hayInternetDisponible(context)) {
+    fun updateProfile(context: Context, userData: UserData) {
+        if (isInternetAvailable(context)) {
             viewModelScope.launch {
                 try {
                     MongoUserRepository.updateUser(userData)
@@ -164,21 +160,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         } else {
-            guardarDatosLocalmente(context, userData)
+            saveDataLocally(context, userData)
         }
     }
 
-    fun guardarDatosLocalmente(context: Context, userData: UserData) {
+    fun saveDataLocally(context: Context, userData: UserData) {
         saveUserProfile(context, userData)
     }
 
-    fun cargarDatosGuardados(context: Context) {
+    fun loadLocalData(context: Context) {
         val user = loadUserProfile(context) ?: return
-        cargarValoresDesde(user)
+        loadValues(user)
     }
 
 
-    private fun cargarValoresDesde(user: UserData) {
+    private fun loadValues(user: UserData) {
         name.value = user.name
         lastName.value = user.lastName
         secondLastName.value = user.secondLastName
@@ -191,7 +187,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         street.value = user.location.street
     }
 
-    fun hayInternetDisponible(context: Context): Boolean {
+    fun isInternetAvailable(context: Context): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = cm.activeNetwork ?: return false
         val capabilities = cm.getNetworkCapabilities(network) ?: return false
@@ -199,19 +195,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun checkAndLoadProfile(context: Context) {
-        val correo = getUserEmail(context)
-        if (correo != null && hayInternetDisponible(context)) {
+        val email = getUserEmail(context)
+        if (email != null && isInternetAvailable(context)) {
             viewModelScope.launch {
                 try {
-                    Log.d("MainViewModel", "Buscando usuario con correo: $correo")
+                    Log.d("MainViewModel", "Buscando usuario con correo: $email")
 
-                    val user = MongoUserRepository.getUserByEmail(correo)
+                    val user = MongoUserRepository.getUserByEmail(email)
                     if (user != null) {
                         // Guardar en memoria
                         name.value = user.name
                         lastName.value = user.lastName
                         secondLastName.value = user.secondLastName
-                        email.value = user.email
+                        this@MainViewModel.email.value = user.email
                         telephone.value = user.telephone
                         birthDay.value = user.birthDay
                         state.value = user.location.state
@@ -225,23 +221,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         Log.d("MainViewModel", "✅ Datos cargados desde backend")
                     } else {
                         Log.e("MainViewModel", "⚠️ Usuario no encontrado en backend")
-                        cargarDatosGuardados(context)
+                        loadLocalData(context)
                     }
                 } catch (e: Exception) {
                     Log.e("MainViewModel", "❌ Error obteniendo usuario: ${e.message}")
-                    cargarDatosGuardados(context)
+                    loadLocalData(context)
                 }
             }
         } else {
             Log.d("MainViewModel", "🌐 Sin conexión o sin correo guardado")
-            cargarDatosGuardados(context)
+            loadLocalData(context)
         }
     }
 
     // aqui se actualizaran los datos por si se desea modificar algo de nuestra vista
     //de aboutme
 
-    fun actualizarDatosDesdeDialogo(
+    fun updateProfileFromDialog(
         name: String,
         lastName: String,
         secondLastName: String,
@@ -262,17 +258,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         this.colony.value = colony
         this.street.value = street
 
-        val user = buildUserData() // Tu método para crear un UserData con todos los campos
+        val user = buildUserData() // metodo para crear un UserData con todos los campos
 
-        saveUserProfile(appContext, user)
-
-        viewModelScope.launch {
-            try {
-                RetrofitClient.apiService.updateUser(user) // esto lo armamos después
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        updateProfile(appContext, user)
     }
 
     fun buildUserData(): UserData {
@@ -292,7 +280,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    fun eliminarCuenta(context: Context) {
+    fun deleteAccount(context: Context) {
         viewModelScope.launch {
             try {
                 val email = this@MainViewModel.email.value
@@ -311,49 +299,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // esta parte se refiere a la logica de los medicamentos
 
-    fun agregarMedicamento(nombre: String, descripcion: String) {
-        val correo = email.value  // asegúrate que ya está inicializado antes
-        val nuevo = Medicamento(nombre, descripcion, correo)
-        val nuevaLista = drugsUiState.medicamentos + nuevo
-        drugsUiState = drugsUiState.copy(medicamentos = nuevaLista)
+    fun addMedication(nombre: String, description: String) {
+        val email = this@MainViewModel.email.value  // asegúrate que ya está inicializado antes
+        val new = Medications(nombre, description, email)
+        val newList = medicationsUiState.medications + new
+        medicationsUiState = medicationsUiState.copy(medications = newList)
 
-        guardarMedicamentosEnLocal(appContext)
-    }
-
-    fun editarDescripcion(med: Medicamento, nuevaDescripcion: String) {
-        val actualizados = drugsUiState.medicamentos.map {
-            if (it == med) it.copy(descripcion = nuevaDescripcion)
-            else it
-        }
-        drugsUiState = drugsUiState.copy(medicamentos = actualizados)
-        guardarMedicamentosEnLocal(appContext)
-    }
-
-    fun guardarMedicamentosEnLocal(context: Context) {
-        saveMedicamentos(context, drugsUiState.medicamentos)
-    }
-
-    fun cargarMedicamentosDeLocal(context: Context) {
-        val cargados = loadMedicamentos(context)
-        drugsUiState = drugsUiState.copy(medicamentos = cargados)
+        saveMedicationsLocal(appContext)
     }
 
 
-    fun agregarMedicamentoBackend(context: Context, nombre: String, descripcion: String) {
-        val correo = email.value
-        if (correo.isBlank()) {
+    fun saveMedicationsLocal(context: Context) {
+        saveMedications(context, medicationsUiState.medications)
+    }
+
+    fun loadMedicationsLocal(context: Context) {
+        val loadMedications = loadMedications(context)
+        medicationsUiState = medicationsUiState.copy(medications = loadMedications)
+    }
+
+
+    fun addMedicationsBackend(context: Context, name: String, description: String) {
+        val email = this@MainViewModel.email.value
+        if (email.isBlank()) {
             Log.e("MainViewModel", "❌ No se puede agregar: email vacío")
             Toast.makeText(context, "⚠️ Error: tu correo no está cargado aún", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val nuevo = Medicamento(nombre, descripcion, correo)
+        val newMedications = Medications(name, description, email)
 
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.apiService.addMedicamento(nuevo)
+                val response = RetrofitClient.apiService.addMedicamento(newMedications)
                 if (response.isSuccessful) {
-                    cargarMedicamentosDesdeBackend(context)
+                    loadMedicationsFromBackend(context)
                     Log.d("MainViewModel", "✅ Medicamento agregado")
                 } else {
                     Log.e("MainViewModel", "❌ Error al guardar medicamento: ${response.code()}")
@@ -364,20 +344,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun cargarMedicamentosDesdeBackend(context: Context) {
-        val correo = email.value
-        if (correo.isBlank()) {
+    fun loadMedicationsFromBackend(context: Context) {
+        val email = this@MainViewModel.email.value
+        if (email.isBlank()) {
             Log.e("MainViewModel", "❌ No se puede cargar: email vacío")
             return
         }
 
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.apiService.getMedicamentos(correo)
+                val response = RetrofitClient.apiService.getMedications(email)
                 if (response.isSuccessful) {
-                    val lista = response.body() ?: emptyList()
-                    drugsUiState = drugsUiState.copy(medicamentos = lista)
-                    saveMedicamentos(context, lista)
+                    val list = response.body() ?: emptyList()
+                    medicationsUiState = medicationsUiState.copy(medications = list)
+                    saveMedications(context, list)
                     Log.d("MainViewModel", "✅ Medicamentos cargados desde backend")
                 } else {
                     Log.e("MainViewModel", "❌ Error al cargar medicamentos: ${response.code()}")
@@ -390,18 +370,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 
 
-    fun editarMedicamentoBackend(context: Context, medicamento: Medicamento, nuevaDescripcion: String) {
-        val actualizado = medicamento.copy(descripcion = nuevaDescripcion)
+    fun editMedicationsBackend(context: Context, medications: Medications, newDescriptions: String) {
+        val updateMedications = medications.copy(description = newDescriptions)
 
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.apiService.updateMedicamento(actualizado._id!!, actualizado)
+                val response = RetrofitClient.apiService.updateMedicamento(updateMedications._id!!, updateMedications)
                 if (response.isSuccessful) {
-                    val nuevaLista = drugsUiState.medicamentos.map {
-                        if (it._id == actualizado._id) actualizado else it
+                    val newList = medicationsUiState.medications.map {
+                        if (it._id == updateMedications._id) updateMedications else it
                     }
-                    drugsUiState = drugsUiState.copy(medicamentos = nuevaLista)
-                    saveMedicamentos(context, nuevaLista)
+                    medicationsUiState = medicationsUiState.copy(medications = newList)
+                    saveMedications(context, newList)
                     Log.d("MainViewModel", "✅ Medicamento editado")
                 } else {
                     Log.e("MainViewModel", "❌ Error al editar medicamento")
@@ -412,8 +392,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun eliminarMedicamento(context: Context, medicamento: Medicamento) {
-        val id = medicamento._id
+    fun deleteMedications(context: Context, medications: Medications) {
+        val id = medications._id
         if (id.isNullOrBlank()) {
             Log.e("MainViewModel", "❌ No se puede eliminar: ID nulo")
             return
@@ -421,11 +401,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.apiService.deleteMedicamento(id)
+                val response = RetrofitClient.apiService.deleteMedications(id)
                 if (response.isSuccessful) {
-                    val actualizados = drugsUiState.medicamentos.filterNot { it._id == id }
-                    drugsUiState = drugsUiState.copy(medicamentos = actualizados)
-                    saveMedicamentos(context, actualizados)
+                    val medicationsUpdate = medicationsUiState.medications.filterNot { it._id == id }
+                    medicationsUiState = medicationsUiState.copy(medications = medicationsUpdate)
+                    saveMedications(context, medicationsUpdate)
                     Log.d("MainViewModel", "✅ Medicamento eliminado del backend y local")
                 } else {
                     Log.e("MainViewModel", "❌ Falló al eliminar medicamento: ${response.code()}")
