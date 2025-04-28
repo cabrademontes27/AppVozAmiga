@@ -1,8 +1,7 @@
 package com.example.appvozamiga.data.network
 
-import com.example.appvozamiga.data.models.Medicamento
+import com.example.appvozamiga.data.models.Medications
 import com.example.appvozamiga.data.models.UserData
-import com.example.appvozamiga.data.network.VerificationStatus
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -33,16 +32,16 @@ interface MongoApiService {
     suspend fun deleteUserByEmail(@Query("email") email: String): Response<Unit>
 
     @GET("api/medicamentos")
-    suspend fun getMedicamentos(@Query("email") email: String): Response<List<Medicamento>>
+    suspend fun getMedications(@Query("email") email: String): Response<List<Medications>>
 
     @POST("api/medicamentos")
-    suspend fun addMedicamento(@Body medicamento: Medicamento): Response<Unit>
+    suspend fun addMedicamento(@Body medicamento: Medications): Response<Unit>
 
     @PUT("api/medicamentos/{id}")
-    suspend fun updateMedicamento(@Path("id") id: String, @Body medicamento: Medicamento): Response<Unit>
+    suspend fun updateMedicamento(@Path("id") id: String, @Body medicamento: Medications): Response<Unit>
 
     @DELETE("api/medicamentos/{id}")
-    suspend fun deleteMedicamento(@Path("id") id: String): Response<Unit>
+    suspend fun deleteMedications(@Path("id") id: String): Response<Unit>
 
 
 
