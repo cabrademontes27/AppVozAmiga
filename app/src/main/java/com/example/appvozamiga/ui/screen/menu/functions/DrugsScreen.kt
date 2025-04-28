@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.appvozamiga.data.models.Medicamento
+import com.example.appvozamiga.data.models.Medications
 import com.example.appvozamiga.viewModels.menu.MainViewModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Delete
@@ -33,16 +33,16 @@ fun DrugsScreen(navController: NavController) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         viewModel.checkAndLoadProfile(context)
-        viewModel.cargarMedicamentosDeLocal(context)
+        viewModel.loadMedicationsLocal(context)
     }
-    val medicamentos = viewModel.drugsUiState.medicamentos
+    val medicamentos = viewModel.medicationsUiState.medications
 
     var showDialog by remember { mutableStateOf(false) }
     var nombreNuevo by remember { mutableStateOf("") }
     var descripcionNueva by remember { mutableStateOf("") }
-    var medicamentoSeleccionado by remember { mutableStateOf<Medicamento?>(null) }
+    var medicamentoSeleccionado by remember { mutableStateOf<Medications?>(null) }
     var descripcionEditada by remember { mutableStateOf("") }
-    var showDeleteDialog by remember { mutableStateOf<Medicamento?>(null) }
+    var showDeleteDialog by remember { mutableStateOf<Medications?>(null) }
 
     // Diálogo: Agregar medicamento
     if (showDialog) {
@@ -51,7 +51,7 @@ fun DrugsScreen(navController: NavController) {
             confirmButton = {
                 TextButton(onClick = {
                     if (nombreNuevo.isNotBlank()) {
-                        viewModel.agregarMedicamentoBackend(context, nombreNuevo, descripcionNueva)
+                        viewModel.addMedicationsBackend(context, nombreNuevo, descripcionNueva)
                     }
                     showDialog = false
                     nombreNuevo = ""
@@ -97,7 +97,7 @@ fun DrugsScreen(navController: NavController) {
             confirmButton = {
                 TextButton(onClick = {
                     medicamentoSeleccionado?.let {
-                        viewModel.editarMedicamentoBackend(context, it, descripcionEditada)
+                        viewModel.editMedicationsBackend(context, it, descripcionEditada)
                     }
                     medicamentoSeleccionado = null
                 }) {
@@ -128,7 +128,7 @@ fun DrugsScreen(navController: NavController) {
             onDismissRequest = { showDeleteDialog = null },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.eliminarMedicamento(context, med)
+                    viewModel.deleteMedications(context, med)
                     showDeleteDialog = null
                 }) {
                     Text("Eliminar", color = Color.Red)
@@ -200,7 +200,7 @@ fun DrugsScreen(navController: NavController) {
 
 @Composable
 fun MedicamentoCard(
-    medicamento: Medicamento,
+    medicamento: Medications,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {

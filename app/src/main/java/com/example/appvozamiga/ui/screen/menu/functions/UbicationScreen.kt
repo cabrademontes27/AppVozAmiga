@@ -84,7 +84,7 @@ fun UbicationScreen(navController: NavController) {
                 Button(
                     onClick = {
                         if (permissionGranted.value) {
-                            mainViewModel.obtenerUbicacion()
+                            mainViewModel.getLocation()
                         }
                     }
                 ) {

@@ -3,7 +3,6 @@ package com.example.appvozamiga.ui.screen.menu.functions
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.appvozamiga.viewModels.menu.MainViewModel
 
@@ -43,7 +42,7 @@ fun EditProfileDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                mainViewModel.actualizarDatosDesdeDialogo(
+                mainViewModel.updateProfileFromDialog(
                     name, lastName, secondLastName, birthDay, telephone, street, state, municipality, colony
                 )
                 onDismiss()

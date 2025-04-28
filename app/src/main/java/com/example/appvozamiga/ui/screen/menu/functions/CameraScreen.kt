@@ -125,9 +125,9 @@ fun CameraScreen(navController: NavController) {
                                         mainViewModel.processImage(bitmap)
                                         val texto = mainViewModel.recognizedText
                                         if (texto.isNotBlank()) {
-                                            mainViewModel.agregarMedicamento(
+                                            mainViewModel.addMedication(
                                                 nombre = texto,
-                                                descripcion = "Detectado con cámara"
+                                                description = "Detectado con cámara"
                                             )
                                             showSnackbar = true
                                         }
