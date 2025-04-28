@@ -109,7 +109,7 @@ fun DrugsScreen(navController: NavController) {
                     Text("Cancelar")
                 }
             },
-            title = { Text(medicamentoSeleccionado!!.nombre) },
+            title = { Text(medicamentoSeleccionado!!.name) },
             text = {
                 OutlinedTextField(
                     value = descripcionEditada,
@@ -140,7 +140,7 @@ fun DrugsScreen(navController: NavController) {
                 }
             },
             title = { Text("¿Eliminar medicamento?") },
-            text = { Text("¿Estás seguro de eliminar ${med.nombre}?") },
+            text = { Text("¿Estás seguro de eliminar ${med.name}?") },
             shape = RoundedCornerShape(16.dp)
         )
     }
@@ -184,7 +184,7 @@ fun DrugsScreen(navController: NavController) {
                             medicamento = medicamento,
                             onClick = {
                                 medicamentoSeleccionado = medicamento
-                                descripcionEditada = medicamento.descripcion
+                                descripcionEditada = medicamento.description
                             },
                             onDelete = {
                                 showDeleteDialog = medicamento
@@ -233,12 +233,12 @@ fun MedicamentoCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = medicamento.nombre,
+                    text = medicamento.name,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                     color = Color(0xFF333333)
                 )
                 Text(
-                    text = medicamento.descripcion,
+                    text = medicamento.description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray
                 )
