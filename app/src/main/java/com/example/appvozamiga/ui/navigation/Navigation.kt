@@ -20,99 +20,137 @@ import com.example.appvozamiga.ui.screen.splash.LoadingScreen
 import com.example.appvozamiga.ui.screen.splash.SplashScreen
 import com.example.appvozamiga.ui.screen.splash.SuccessScreen
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.navigation.compose.*
+import com.example.appvozamiga.viewModels.menu.MainViewModel
+import com.example.appvozamiga.ui.screen.menu.functions.*
+import com.example.appvozamiga.ui.screen.splash.*
+import com.example.appvozamiga.ui.screen.blocked.LockOverlay
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val mainViewModel: MainViewModel = viewModel()
+    val isLocked = mainViewModel.appUiState.isLocked
+    val context = LocalContext.current
 
-    NavHost(
-        navController = navController,
-        startDestination = Routes.SPLASH
+    // Guarda los toques recientes para contar taps rápidos
+    val tapTimes = remember { mutableStateListOf<Long>() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        if (event.changes.any { it.previousPressed && !it.pressed }) {
+                            val now = System.currentTimeMillis()
+                            tapTimes.add(now)
+                            tapTimes.removeAll { now - it > 800 }
+
+                            when (tapTimes.size) {
+                                3 -> mainViewModel.setLocked(true)
+                                4 -> {
+                                    mainViewModel.setLocked(false)
+                                    tapTimes.clear()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
     ) {
-        composable(Routes.SPLASH) {
-            val context = LocalContext.current
-            SplashScreen()
+        NavHost(
+            navController = navController,
+            startDestination = Routes.SPLASH
+        ) {
+            composable(Routes.SPLASH) {
+                SplashScreen()
 
-            LaunchedEffect(Unit) {
-                delay(2000)
-                if (isUserRegistered(context)) {
+                LaunchedEffect(Unit) {
+                    delay(2000)
+                    if (isUserRegistered(context)) {
+                        navController.navigate(Routes.MAIN_MENU) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.REGISTER) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
+                    }
+                }
+            }
+
+            composable(Routes.REGISTER) {
+                val registerViewModel: RegisterViewModel = viewModel()
+                val state = registerViewModel.uiState.value
+
+                LaunchedEffect(Unit) {
+                    registerViewModel.verificarEstadoDesdeBackend(context)
+                }
+
+                RegisterScreen(viewModel = registerViewModel) {}
+
+                if (state.isLoading) LoadingScreen()
+                if (state.isVerified) SuccessScreen(onFinish = {})
+
+                LaunchedEffect(state.shouldNavigateToMenu) {
+                    if (state.shouldNavigateToMenu) {
+                        registerViewModel.resetNavigationFlag()
+                        navController.navigate(Routes.MAIN_MENU) {
+                            popUpTo(Routes.REGISTER) { inclusive = true }
+                        }
+                    }
+                }
+            }
+
+            composable(Routes.SUCCESS) {
+                SuccessScreen(onFinish = {
                     navController.navigate(Routes.MAIN_MENU) {
-                        popUpTo(Routes.SPLASH) { inclusive = true }
+                        popUpTo(Routes.SUCCESS) { inclusive = true }
                     }
-                } else {
-                    navController.navigate(Routes.REGISTER) {
-                        popUpTo(Routes.SPLASH) { inclusive = true }
-                    }
-                }
+                })
+            }
+
+            composable(Routes.MAIN_MENU) {
+                MainMenuScreen(navController)
+            }
+
+            composable(Routes.LOADING_TO_DRUGS) {
+                LoadingRedirectScreen(navController, Routes.DRUGS)
+            }
+            composable(Routes.LOADING_TO_LOCATION) {
+                LoadingRedirectScreen(navController, Routes.LOCATION)
+            }
+            composable(Routes.LOADING_TO_CAMERA) {
+                LoadingRedirectScreen(navController, Routes.CAMERA)
+            }
+            composable(Routes.LOADING_TO_ABOUT_ME) {
+                LoadingRedirectScreen(navController, Routes.ABOUT_ME)
+            }
+
+            composable(Routes.DRUGS) {
+                DrugsScreen(navController)
+            }
+            composable(Routes.LOCATION) {
+                UbicationScreen(navController)
+            }
+            composable(Routes.CAMERA) {
+                CameraScreen(navController)
+            }
+            composable(Routes.ABOUT_ME) {
+                AboutMeScreen(navController)
             }
         }
 
-        composable(Routes.REGISTER) {
-            val context = LocalContext.current
-            val registerViewModel: RegisterViewModel = viewModel()
-            val state = registerViewModel.uiState.value
-
-            LaunchedEffect(Unit) {
-                registerViewModel.verificarEstadoDesdeBackend(context)
-            }
-
-            RegisterScreen(viewModel = registerViewModel) {}
-
-            if (state.isLoading) {
-                LoadingScreen()
-            }
-
-            if (state.isVerified) {
-                SuccessScreen(onFinish = {})
-            }
-
-            LaunchedEffect(state.shouldNavigateToMenu) {
-                if (state.shouldNavigateToMenu) {
-                    registerViewModel.resetNavigationFlag()
-                    navController.navigate(Routes.MAIN_MENU) {
-                        popUpTo(Routes.REGISTER) { inclusive = true }
-                    }
-                }
-            }
-        }
-
-
-        composable(Routes.SUCCESS) {
-            SuccessScreen(onFinish = {
-                navController.navigate(Routes.MAIN_MENU) {
-                    popUpTo(Routes.SUCCESS) { inclusive = true }
-                }
-            })
-        }
-
-        composable(Routes.MAIN_MENU) {
-            MainMenuScreen(navController = navController)
-        }
-
-        composable(Routes.LOADING_TO_DRUGS) {
-            LoadingRedirectScreen(navController, Routes.DRUGS)
-        }
-        composable(Routes.LOADING_TO_LOCATION) {
-            LoadingRedirectScreen(navController, Routes.LOCATION)
-        }
-        composable(Routes.LOADING_TO_CAMERA) {
-            LoadingRedirectScreen(navController, Routes.CAMERA)
-        }
-        composable(Routes.LOADING_TO_ABOUT_ME) {
-            LoadingRedirectScreen(navController, Routes.ABOUT_ME)
-        }
-
-        composable(Routes.DRUGS) {
-            DrugsScreen(navController)
-        }
-        composable(Routes.LOCATION) {
-            UbicationScreen(navController)
-        }
-        composable(Routes.CAMERA) {
-            CameraScreen(navController)
-        }
-        composable(Routes.ABOUT_ME) {
-            AboutMeScreen(navController)
+        // Bloquea interacción visual
+        if (isLocked) {
+            LockOverlay()
         }
     }
 }

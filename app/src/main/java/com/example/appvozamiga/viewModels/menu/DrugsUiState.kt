@@ -11,3 +11,7 @@ data class DrugsUiState(
     val selectedDrug: Medications? = null,
     val descripcionEditada: String = ""
 )
+
+data class AppUiState(
+    val isLocked: Boolean = false
+)

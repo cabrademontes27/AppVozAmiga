@@ -65,6 +65,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var colony = mutableStateOf("")
     var street = mutableStateOf("")
 
+    //estados para bloquear o desbloquear pantalla
+    var appUiState by mutableStateOf(AppUiState())
+        private set
+
 
 
     //aqui es solo la parte visual de funcion de la camara,
@@ -414,6 +418,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 Log.e("MainViewModel", "❌ Error eliminando medicamento: ${e.message}")
             }
         }
+    }
+
+    // Esta parta sera para las funciones tactiles de desbloquear pantalla o no
+    fun setLocked(locked: Boolean) {
+        appUiState = appUiState.copy(isLocked = locked)
     }
 
 
