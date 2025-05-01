@@ -203,11 +203,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (email != null && isInternetAvailable(context)) {
             viewModelScope.launch {
                 try {
-                    Log.d("MainViewModel", "Buscando usuario con correo: $email")
-
+                    Log.d("MainViewModel", "Cargando datos desde backend para: $email")
+                    // 1. Obtener perfil
                     val user = MongoUserRepository.getUserByEmail(email)
                     if (user != null) {
-                        // Guardar en memoria
+                        // Guardar perfil en memoria
                         name.value = user.name
                         lastName.value = user.lastName
                         secondLastName.value = user.secondLastName
@@ -219,24 +219,39 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         colony.value = user.location.colony
                         street.value = user.location.street
 
-                        // Guardar en local
+                        // Guardar perfil localmente
                         saveUserProfile(context, user)
-
-                        Log.d("MainViewModel", "✅ Datos cargados desde backend")
+                        Log.d("MainViewModel", "✅ Perfil cargado desde backend")
+                        sincronizarMedicamentosPendientes(context)
                     } else {
                         Log.e("MainViewModel", "⚠️ Usuario no encontrado en backend")
-                        loadLocalData(context)
                     }
+
+                    // 2. Obtener medicamentos del backend
+                    val response = RetrofitClient.apiService.getMedications(email)
+                    if (response.isSuccessful) {
+                        val meds = response.body() ?: emptyList()
+                        medicationsUiState = medicationsUiState.copy(medications = meds)
+                        saveMedications(context, meds)
+                        Log.d("MainViewModel", "✅ Medicamentos sincronizados desde backend")
+                    } else {
+                        Log.e("MainViewModel", "❌ Error cargando medicamentos: ${response.code()}")
+                    }
+
                 } catch (e: Exception) {
-                    Log.e("MainViewModel", "❌ Error obteniendo usuario: ${e.message}")
+                    Log.e("MainViewModel", "❌ Error al cargar datos: ${e.message}")
                     loadLocalData(context)
+                    loadMedicationsLocal(context)
                 }
             }
         } else {
-            Log.d("MainViewModel", "🌐 Sin conexión o sin correo guardado")
+            Log.d("MainViewModel", "📴 Sin internet. Cargando desde almacenamiento local.")
             loadLocalData(context)
+            loadMedicationsLocal(context)
         }
     }
+
+
 
     // aqui se actualizaran los datos por si se desea modificar algo de nuestra vista
     //de aboutme
@@ -332,17 +347,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val newMedications = Medications(name, description, email)
+        Log.d("MainViewModel", "📦 Enviando medicamento: $newMedications")
 
         viewModelScope.launch {
             try {
                 val response = RetrofitClient.apiService.addMedicamento(newMedications)
                 if (response.isSuccessful) {
                     loadMedicationsFromBackend(context)
+                    Log.d("MainViewModel", "📧 Email actual: '${email}'")
                     Log.d("MainViewModel", "✅ Medicamento agregado")
                 } else {
+                    Log.d("MainViewModel", "📧 Email actual: '${email}'")
                     Log.e("MainViewModel", "❌ Error al guardar medicamento: ${response.code()}")
                 }
             } catch (e: Exception) {
+                Log.d("MainViewModel", "📧 Email actual: '${email}'")
                 Log.e("MainViewModel", "❌ Error al agregar medicamento: ${e.message}")
             }
         }
@@ -362,6 +381,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val list = response.body() ?: emptyList()
                     medicationsUiState = medicationsUiState.copy(medications = list)
                     saveMedications(context, list)
+                    Log.d("MainViewModel", "📦 Lista recibida del backend: $list")
                     Log.d("MainViewModel", "✅ Medicamentos cargados desde backend")
                 } else {
                     Log.e("MainViewModel", "❌ Error al cargar medicamentos: ${response.code()}")
@@ -419,6 +439,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun cleanInvalidMedications(context: Context) {
+        val cleaned = medicationsUiState.medications.filter {
+            it.name.isNotBlank() || it.description.isNotBlank()
+        }
+
+        medicationsUiState = medicationsUiState.copy(medications = cleaned)
+        saveMedications(context, cleaned)
+        Log.d("MainViewModel", "🧹 Medicamentos inválidos eliminados localmente")
+    }
+
+    private suspend fun sincronizarMedicamentosPendientes(context: Context) {
+        val email = this@MainViewModel.email.value
+        if (email.isBlank()) return
+
+        val pendientes = medicationsUiState.medications.filter { it._id == null }
+
+        for (med in pendientes) {
+            try {
+                val nuevo = med.copy(email = email) // Asegura que tenga el email
+                val response = RetrofitClient.apiService.addMedicamento(nuevo)
+                if (response.isSuccessful) {
+                    Log.d("MainViewModel", "✅ Medicamento sincronizado: ${med.name}")
+                } else {
+                    Log.e("MainViewModel", "❌ Error al sincronizar ${med.name}: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "❌ Error al sincronizar ${med.name}: ${e.message}")
+            }
+        }
+
+        // Recarga los medicamentos desde backend para actualizar _id y evitar duplicados
+        loadMedicationsFromBackend(context)
+    }
+
+
 
     // Esta parta sera para las funciones tactiles de desbloquear pantalla o no
     fun setLocked(locked: Boolean) {

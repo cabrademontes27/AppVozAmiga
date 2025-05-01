@@ -34,6 +34,7 @@ fun DrugsScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         viewModel.checkAndLoadProfile(context)
         viewModel.loadMedicationsLocal(context)
+        viewModel.cleanInvalidMedications(context)
     }
     val medicamentos = viewModel.medicationsUiState.medications
 
