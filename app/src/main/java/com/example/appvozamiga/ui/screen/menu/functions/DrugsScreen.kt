@@ -238,7 +238,7 @@ fun MedicamentoCard(
                     color = Color(0xFF333333)
                 )
                 Text(
-                    text = medicamento.description,
+                    text = medicamento.description ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray
                 )
