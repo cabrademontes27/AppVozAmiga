@@ -13,5 +13,6 @@ data class DrugsUiState(
 )
 
 data class AppUiState(
-    val isLocked: Boolean = false
+    val isLocked: Boolean = false,
+    val perfilCargado: Boolean = false
 )
