@@ -25,20 +25,50 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.navigation.compose.*
 import com.example.appvozamiga.viewModels.menu.MainViewModel
-import com.example.appvozamiga.ui.screen.menu.functions.*
-import com.example.appvozamiga.ui.screen.splash.*
 import com.example.appvozamiga.ui.screen.blocked.LockOverlay
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+
+
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val mainViewModel: MainViewModel = viewModel()
-    val isLocked = mainViewModel.appUiState.isLocked
+    val isLocked by remember { derivedStateOf { mainViewModel.appUiState.isLocked } }
     val context = LocalContext.current
 
-    // Guarda los toques recientes para contar taps rápidos
+    // Estado y launcher para permiso de micrófono
+    var micPermissionGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val micLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        micPermissionGranted = granted
+        if (!granted) {
+            Toast.makeText(
+                context,
+                "Se necesita permiso de micrófono para comandos de voz",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    // Para contar taps rápidos
     val tapTimes = remember { mutableStateListOf<Long>() }
 
     Box(
@@ -51,12 +81,23 @@ fun AppNavigation() {
                         if (event.changes.any { it.previousPressed && !it.pressed }) {
                             val now = System.currentTimeMillis()
                             tapTimes.add(now)
+                            // mantenemos solo los taps en los últimos 800 ms
                             tapTimes.removeAll { now - it > 800 }
 
                             when (tapTimes.size) {
-                                3 -> mainViewModel.setLocked(true)
+                                3 -> {
+                                    if (!mainViewModel.appUiState.isLocked) {
+                                        if (micPermissionGranted) {
+                                            mainViewModel.setLocked(context, true)
+                                        } else {
+                                            micLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        }
+                                    }
+                                }
                                 4 -> {
-                                    mainViewModel.setLocked(false)
+                                    if (mainViewModel.appUiState.isLocked) {
+                                        mainViewModel.setLocked(context, false)
+                                    }
                                     tapTimes.clear()
                                 }
                             }
@@ -148,9 +189,19 @@ fun AppNavigation() {
             }
         }
 
-        // Bloquea interacción visual
+        LaunchedEffect(mainViewModel.rutaComando) {
+            mainViewModel.rutaComando?.let { ruta ->
+                navController.navigate(ruta) {
+                    // opcional: popUpTo, etc.
+                }
+                mainViewModel.resetRutaPorVoz()
+            }
+        }
+
+// Bloquea interacción visual
         if (isLocked) {
             LockOverlay()
         }
+
     }
 }
