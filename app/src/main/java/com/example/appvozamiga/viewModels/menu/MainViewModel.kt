@@ -3,6 +3,7 @@ package com.example.appvozamiga.viewModels.menu
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.location.Geocoder
 import android.location.Location
@@ -36,6 +37,16 @@ import androidx.compose.runtime.setValue
 import com.example.appvozamiga.data.models.Medications
 import com.example.appvozamiga.data.models.loadMedications
 import com.example.appvozamiga.data.models.saveMedications
+import android.media.MediaPlayer
+import android.os.Handler
+import androidx.core.content.ContextCompat
+import com.example.appvozamiga.R
+import com.example.appvozamiga.utils.TextToSpeechUtils
+import android.Manifest
+import com.example.appvozamiga.utils.VoskRecognizerUtils
+import kotlinx.coroutines.delay
+import org.vosk.LibVosk
+import org.vosk.LogLevel
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -44,11 +55,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var recognizedText by mutableStateOf("")
         private set
 
+    var recognizedTextVoice by mutableStateOf("")
+        private set
+
     var locationText by mutableStateOf("Obteniendo ubicación...")
         private set
 
     var medicationsUiState by mutableStateOf(DrugsUiState())
         private set
+
+    var rutaComando by mutableStateOf<String?>(null)
+        private set
+
+    fun navegarARutaPorVoz(ruta: String) {
+        rutaComando = ruta
+    }
+    fun resetRutaPorVoz() {
+        rutaComando = null
+    }
+
+
 
 
     private val fusedLocationClient: FusedLocationProviderClient =
@@ -109,7 +135,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun getLocation() {
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
-            5000L
+            5_000L
         ).build()
 
         fusedLocationClient.requestLocationUpdates(
@@ -117,12 +143,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             object : LocationCallback() {
                 override fun onLocationResult(result: LocationResult) {
                     fusedLocationClient.removeLocationUpdates(this)
-                    val location: Location? = result.lastLocation
-                    location?.let {
-                        covertLocationToText(it.latitude, it.longitude)
-                    } ?: run {
-                        locationText = "No se pudo obtener la ubicación."
+                    val loc = result.lastLocation
+                    val texto = if (loc != null) {
+                        covertLocationToText(loc.latitude, loc.longitude)
+                    } else {
+                        "No se pudo obtener la ubicación."
                     }
+                    // Como getLocation puede venir de un botón, inicializamos TTS aquí:
+                    TextToSpeechUtils.iniciarTTS(appContext) {
+                        TextToSpeechUtils.hablar(texto)
+                    }
+                    locationText = texto
                 }
             },
             Looper.getMainLooper()
@@ -130,25 +161,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // 🗺️ Convertir coordenadas a texto entendible
-    private fun covertLocationToText(lat: Double, lon: Double) {
+    private fun covertLocationToText(lat: Double, lon: Double): String {
         val geocoder = Geocoder(getApplication(), Locale.getDefault())
-        try {
-            val location = geocoder.getFromLocation(lat, lon, 1)
-            if (!location.isNullOrEmpty()) {
-                val dir = location[0]
-                val state = dir.adminArea ?: ""
-                val city = dir.locality ?: dir.subAdminArea ?: ""
+        return try {
+            val lista = geocoder.getFromLocation(lat, lon, 1)
+            if (!lista.isNullOrEmpty()) {
+                val dir = lista[0]
+                val state  = dir.adminArea ?: ""
+                val city   = dir.locality ?: dir.subAdminArea ?: ""
                 val colony = dir.subLocality ?: ""
                 val street = dir.thoroughfare ?: ""
-
-                locationText = "Estás en $state, $city en la colonia $colony en la calle $street"
+                "Estás en $state, $city en la colonia $colony en la calle $street"
             } else {
-                locationText = "No se encontró la dirección."
+                "No se encontró la dirección."
             }
         } catch (e: Exception) {
-            locationText = "Error al obtener la dirección: ${e.message}"
+            "Error al obtener la dirección: ${e.localizedMessage}"
         }
     }
+
+
 
     // aqui se verificara si hay internet para actulizar los datos si se cambiarn
     // si no pues no JAJAJA
@@ -477,8 +509,60 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 
     // Esta parta sera para las funciones tactiles de desbloquear pantalla o no
-    fun setLocked(locked: Boolean) {
+
+    fun setPerfilCargado(valor: Boolean) {
+        appUiState = appUiState.copy(perfilCargado = valor)
+    }
+
+
+    fun setLocked(context: Context, locked: Boolean) {
         appUiState = appUiState.copy(isLocked = locked)
+
+        if (locked) {
+            if (!appUiState.perfilCargado) {
+                checkAndLoadProfile(context)
+                setPerfilCargado(true)
+            }
+
+            playSound(context, R.raw.activate)
+
+            TextToSpeechUtils.iniciarTTS(context) {
+                val nombreUsuario = name.value.ifBlank { "amigo" }
+
+                TextToSpeechUtils.hablarConCallback(
+                    texto = "Hola $nombreUsuario, estoy escuchando tus comandos",
+                    utteranceId = "GREETING"
+                ) {
+                    VoskRecognizerUtils.iniciarReconocimiento(context, this@MainViewModel)
+                }
+            }
+
+        } else {
+            playSound(context, R.raw.activate)
+
+            TextToSpeechUtils.iniciarTTS(context) {
+                TextToSpeechUtils.hablarConCallback(
+                    texto = "Hasta luego",
+                    utteranceId = "FAREWELL"
+                ) {
+                    VoskRecognizerUtils.detener()
+                    TextToSpeechUtils.liberar()
+                }
+            }
+        }
+    }
+
+
+    fun playSound(context: Context, soundResId: Int) {
+        val mediaPlayer = MediaPlayer.create(context, soundResId)
+        mediaPlayer.setOnCompletionListener {
+            it.release()
+        }
+        mediaPlayer.start()
+    }
+
+    fun actualizarTextoReconocido(texto: String) {
+        recognizedTextVoice = texto
     }
 
 
