@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.location.Geocoder
-import android.location.Location
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Looper
@@ -38,15 +37,11 @@ import com.example.appvozamiga.data.models.Medications
 import com.example.appvozamiga.data.models.loadMedications
 import com.example.appvozamiga.data.models.saveMedications
 import android.media.MediaPlayer
-import android.os.Handler
 import androidx.core.content.ContextCompat
 import com.example.appvozamiga.R
 import com.example.appvozamiga.utils.TextToSpeechUtils
 import android.Manifest
 import com.example.appvozamiga.utils.VoskRecognizerUtils
-import kotlinx.coroutines.delay
-import org.vosk.LibVosk
-import org.vosk.LogLevel
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -67,12 +62,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var rutaComando by mutableStateOf<String?>(null)
         private set
 
-    fun navegarARutaPorVoz(ruta: String) {
-        rutaComando = ruta
-    }
-    fun resetRutaPorVoz() {
-        rutaComando = null
-    }
+
 
 
 
@@ -179,6 +169,70 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             "Error al obtener la dirección: ${e.localizedMessage}"
         }
     }
+
+    fun obtenerUbicacionConTexto(onUbicacionObtenida: (String) -> Unit) {
+        val permiso = Manifest.permission.ACCESS_FINE_LOCATION
+        if (ContextCompat.checkSelfPermission(appContext, permiso) != PackageManager.PERMISSION_GRANTED) {
+            onUbicacionObtenida("Permiso de ubicación no concedido.")
+            return
+        }
+
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            5_000L
+        ).build()
+
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            object : LocationCallback() {
+                override fun onLocationResult(result: LocationResult) {
+                    fusedLocationClient.removeLocationUpdates(this)
+                    val loc = result.lastLocation
+                    val texto = if (loc != null) {
+                        covertLocationToText(loc.latitude, loc.longitude)
+                    } else {
+                        "No se pudo obtener la ubicación."
+                    }
+                    locationText = texto
+                    onUbicacionObtenida(texto) // 🔥 Aquí se responde por callback
+                }
+            },
+            Looper.getMainLooper()
+        )
+    }
+
+    @SuppressLint("MissingPermission")
+    fun obtenerTextoUbicacion(context: Context, callback: (String) -> Unit) {
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            5_000L
+        ).build()
+
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            object : LocationCallback() {
+                override fun onLocationResult(result: LocationResult) {
+                    fusedLocationClient.removeLocationUpdates(this)
+                    val loc = result.lastLocation
+                    val texto = if (loc != null) {
+                        covertLocationToText(loc.latitude, loc.longitude)
+                    } else {
+                        "No se pudo obtener la ubicación."
+                    }
+
+                    // Actualiza el estado si deseas
+                    locationText = texto
+
+                    callback(texto)
+                }
+            },
+            Looper.getMainLooper()
+        )
+    }
+
+
+
+
 
 
 
@@ -510,12 +564,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Esta parta sera para las funciones tactiles de desbloquear pantalla o no
 
+    fun navegarARutaPorVoz(ruta: String) {
+        rutaComando = ruta
+    }
+    fun resetRutaPorVoz() {
+        rutaComando = null
+    }
+
     fun setPerfilCargado(valor: Boolean) {
         appUiState = appUiState.copy(perfilCargado = valor)
     }
 
 
-    fun setLocked(context: Context, locked: Boolean) {
+    fun setLocked(context: Context, locked: Boolean, hablarDespedida: Boolean = true) {
         appUiState = appUiState.copy(isLocked = locked)
 
         if (locked) {
@@ -529,28 +590,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             TextToSpeechUtils.iniciarTTS(context) {
                 val nombreUsuario = name.value.ifBlank { "amigo" }
 
+                // 🚫 Detén antes de hablar
+                VoskRecognizerUtils.stopRecognition()
+
+                // 🗣️ Habla y luego activa escucha
                 TextToSpeechUtils.hablarConCallback(
                     texto = "Hola $nombreUsuario, estoy escuchando tus comandos",
                     utteranceId = "GREETING"
                 ) {
-                    VoskRecognizerUtils.iniciarReconocimiento(context, this@MainViewModel)
+                    VoskRecognizerUtils.startRecognition(context, this@MainViewModel)
                 }
             }
-
         } else {
             playSound(context, R.raw.activate)
 
             TextToSpeechUtils.iniciarTTS(context) {
-                TextToSpeechUtils.hablarConCallback(
-                    texto = "Hasta luego",
-                    utteranceId = "FAREWELL"
-                ) {
-                    VoskRecognizerUtils.detener()
+                VoskRecognizerUtils.stopRecognition()
+
+                if (hablarDespedida) {
+                    TextToSpeechUtils.hablarConCallback(
+                        texto = "Hasta luego",
+                        utteranceId = "FAREWELL"
+                    ) {
+                        TextToSpeechUtils.liberar()
+                    }
+                } else {
                     TextToSpeechUtils.liberar()
                 }
             }
         }
     }
+
 
 
     fun playSound(context: Context, soundResId: Int) {
