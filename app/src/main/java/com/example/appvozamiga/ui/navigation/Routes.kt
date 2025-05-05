@@ -6,6 +6,7 @@ object Routes {
     const val REGISTER = "register"
     const val MAIN_MENU = "main_menu"
     const val SUCCESS = "success"
+    const val LOGIN = "login"
 
     // Functional screens
     const val DRUGS = "drugs"
