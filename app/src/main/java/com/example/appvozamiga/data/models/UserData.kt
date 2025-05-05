@@ -5,6 +5,7 @@ data class UserData(
     val lastName: String = "",
     val secondLastName: String = "",
     val email: String = "",
+    val password: String = "",
     val telephone: String = "",
     val birthDay: String = "",
     val location: Location = Location()
