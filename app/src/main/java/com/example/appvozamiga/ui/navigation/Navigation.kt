@@ -36,6 +36,12 @@ import androidx.core.content.ContextCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import com.example.appvozamiga.ui.screen.login.LoginScreen
+import com.example.appvozamiga.data.models.getUserEmail
+import com.example.appvozamiga.data.models.saveSignInEmail
+import com.example.appvozamiga.data.models.setUserRegistered
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateListOf
 
 
 
@@ -46,7 +52,7 @@ fun AppNavigation() {
     val isLocked by remember { derivedStateOf { mainViewModel.appUiState.isLocked } }
     val context = LocalContext.current
 
-    // Estado y launcher para permiso de micrófono
+    // Mic permission launcher
     var micPermissionGranted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -68,7 +74,7 @@ fun AppNavigation() {
         }
     }
 
-    // Para contar taps rápidos
+    // Triple/quad tap to lock
     val tapTimes = remember { mutableStateListOf<Long>() }
 
     Box(
@@ -81,12 +87,11 @@ fun AppNavigation() {
                         if (event.changes.any { it.previousPressed && !it.pressed }) {
                             val now = System.currentTimeMillis()
                             tapTimes.add(now)
-                            // mantenemos solo los taps en los últimos 800 ms
                             tapTimes.removeAll { now - it > 800 }
 
                             when (tapTimes.size) {
                                 3 -> {
-                                    if (!mainViewModel.appUiState.isLocked) {
+                                    if (!isLocked) {
                                         if (micPermissionGranted) {
                                             mainViewModel.setLocked(context, true)
                                         } else {
@@ -95,7 +100,7 @@ fun AppNavigation() {
                                     }
                                 }
                                 4 -> {
-                                    if (mainViewModel.appUiState.isLocked) {
+                                    if (isLocked) {
                                         mainViewModel.setLocked(context, false)
                                     }
                                     tapTimes.clear()
@@ -110,9 +115,9 @@ fun AppNavigation() {
             navController = navController,
             startDestination = Routes.SPLASH
         ) {
+            // Splash decides next screen
             composable(Routes.SPLASH) {
                 SplashScreen()
-
                 LaunchedEffect(Unit) {
                     delay(2000)
                     if (isUserRegistered(context)) {
@@ -120,26 +125,41 @@ fun AppNavigation() {
                             popUpTo(Routes.SPLASH) { inclusive = true }
                         }
                     } else {
-                        navController.navigate(Routes.REGISTER) {
+                        navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.SPLASH) { inclusive = true }
                         }
                     }
                 }
             }
 
+            // Register flow
             composable(Routes.REGISTER) {
                 val registerViewModel: RegisterViewModel = viewModel()
-                val state = registerViewModel.uiState.value
+                val state by registerViewModel.uiState
 
+                // Check existing state on start
                 LaunchedEffect(Unit) {
                     registerViewModel.verificarEstadoDesdeBackend(context)
                 }
 
-                RegisterScreen(viewModel = registerViewModel) {}
+                RegisterScreen(
+                    viewModel = registerViewModel,
+                    onRegisterComplete = {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(Routes.REGISTER) { inclusive = true }
+                        }
+                    }
+                )
 
                 if (state.isLoading) LoadingScreen()
-                if (state.isVerified) SuccessScreen(onFinish = {})
-
+                if (state.isVerified) {
+                    SuccessScreen(onFinish = {
+                        registerViewModel.resetNavigationFlag()
+                        navController.navigate(Routes.MAIN_MENU) {
+                            popUpTo(Routes.REGISTER) { inclusive = true }
+                        }
+                    })
+                }
                 LaunchedEffect(state.shouldNavigateToMenu) {
                     if (state.shouldNavigateToMenu) {
                         registerViewModel.resetNavigationFlag()
@@ -150,18 +170,33 @@ fun AppNavigation() {
                 }
             }
 
-            composable(Routes.SUCCESS) {
-                SuccessScreen(onFinish = {
-                    navController.navigate(Routes.MAIN_MENU) {
-                        popUpTo(Routes.SUCCESS) { inclusive = true }
+            // Login flow
+            composable(Routes.LOGIN) {
+                LoginScreen(
+                    navController = navController,
+                    onLoginSuccess = {
+                        // Persist login state
+                        setUserRegistered(context)
+                        getUserEmail(context)?.let { saveSignInEmail(context, it) }
+                        navController.navigate(Routes.MAIN_MENU) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
                     }
-                })
+                )
             }
 
+            // Main menu
             composable(Routes.MAIN_MENU) {
                 MainMenuScreen(navController)
             }
 
+            // Functional screens
+            composable(Routes.DRUGS) { DrugsScreen(navController) }
+            composable(Routes.LOCATION) { UbicationScreen(navController) }
+            composable(Routes.CAMERA) { CameraScreen(navController) }
+            composable(Routes.ABOUT_ME) { AboutMeScreen(navController) }
+
+            // Loading redirects
             composable(Routes.LOADING_TO_DRUGS) {
                 LoadingRedirectScreen(navController, Routes.DRUGS)
             }
@@ -174,34 +209,19 @@ fun AppNavigation() {
             composable(Routes.LOADING_TO_ABOUT_ME) {
                 LoadingRedirectScreen(navController, Routes.ABOUT_ME)
             }
-
-            composable(Routes.DRUGS) {
-                DrugsScreen(navController)
-            }
-            composable(Routes.LOCATION) {
-                UbicationScreen(navController)
-            }
-            composable(Routes.CAMERA) {
-                CameraScreen(navController)
-            }
-            composable(Routes.ABOUT_ME) {
-                AboutMeScreen(navController)
-            }
         }
 
+        // Voice-navigation side effect
         LaunchedEffect(mainViewModel.rutaComando) {
             mainViewModel.rutaComando?.let { ruta ->
-                navController.navigate(ruta) {
-                    // opcional: popUpTo, etc.
-                }
+                navController.navigate(ruta)
                 mainViewModel.resetRutaPorVoz()
             }
         }
 
-// Bloquea interacción visual
+        // Lock overlay
         if (isLocked) {
             LockOverlay()
         }
-
     }
 }
