@@ -125,6 +125,7 @@ class RegisterViewModel : ViewModel() {
         lastName: String,
         secondLastName: String,
         email: String,
+        password: String,     // ← nuevo parámetro
         telephone: String,
         birthDay: String,
         state: String,
@@ -148,22 +149,47 @@ class RegisterViewModel : ViewModel() {
         saveUserDataToPrefs(context)
 
         val location = Location(state, municipality, colony, street)
-        val user = UserData(name, lastName, secondLastName, email, telephone, birthDay, location)
+        val user = UserData(name, lastName, secondLastName, email, password, telephone, birthDay, location)
 
         viewModelScope.launch {
+            // 1) Pre‐chequeo de existencia y verificación
+            when (validarCorreo(email)) {
+                is RegisterCheckResult.ExisteYVerificado -> {
+                    Toast.makeText(
+                        context,
+                        "Este correo ya está registrado. Inicia sesión.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    _uiState.value =
+                        _uiState.value.copy(shouldNavigateToLogin = true)
+                    return@launch
+                }
+                is RegisterCheckResult.ExistePeroNoVerificado -> {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            errorMessage = "Ya existe cuenta sin verificar. Revisa tu correo."
+                        )
+                    return@launch
+                }
+                RegisterCheckResult.NoExiste -> {
+                    // No existe: continuar con el registro
+                }
+            }
+
+            // 2) Registro normal en MongoDB
             val success = MongoUserRepository.registerUser(user)
             if (success) {
                 _uiState.value = _uiState.value.copy(isSuccess = true)
-                Log.i("RegisterViewModel", "Usuario registrado en MongoDB")
                 Toast.makeText(
                     context,
                     "Registro exitoso. Revisa tu correo para verificar.",
                     Toast.LENGTH_LONG
                 ).show()
-
                 verificarConReintentos(context)
             } else {
                 Log.e("RegisterViewModel", "Error al registrar usuario en MongoDB")
+                _uiState.value =
+                    _uiState.value.copy(errorMessage = "Error al registrar. Intenta de nuevo.")
             }
         }
     }
@@ -267,11 +293,9 @@ class RegisterViewModel : ViewModel() {
 
     private fun verificarConReintentos(context: Context) {
         val email = _email.value ?: return
-
         viewModelScope.launch {
             repeat(10) { intento ->
                 val response = MongoUserRepository.checkEmailVerified(email)
-
                 if (response?.verified == true) {
                     setUserRegistered(context)
                     setUserVerified(context)
@@ -288,4 +312,28 @@ class RegisterViewModel : ViewModel() {
         }
     }
 
+
+    //esta parte es para el login, aqui se verificara si el correo existe enla base de datos
+    //entonces lo unico que hara redirigir al LoginScreen
+    // 1) Pre‐chequeo: existe y verificado
+    // 1) Pre-chequeo completo
+    private suspend fun validarCorreo(email: String): RegisterCheckResult {
+        val user   = MongoUserRepository.getUserByEmail(email)
+        val status = MongoUserRepository.checkEmailVerified(email)
+        return when {
+            user != null && status?.verified == true  -> RegisterCheckResult.ExisteYVerificado
+            user != null && status?.verified == false -> RegisterCheckResult.ExistePeroNoVerificado
+            else                                       -> RegisterCheckResult.NoExiste
+        }
+    }
+
+
+    // 2) Resetear flag de navegación al Login
+    fun resetLoginNavigationFlag() {
+        _uiState.value = _uiState.value.copy(shouldNavigateToLogin = false)
+    }
+
+    suspend fun isEmailAlreadyVerified(email: String): Boolean {
+        return MongoUserRepository.checkEmailVerified(email)?.verified == true
+    }
 }
