@@ -9,6 +9,7 @@ private const val PREFS_NAME = "user_prefs"
 private const val KEY_IS_REGISTERED = "is_registered"
 private const val KEY_EMAIL_FOR_SIGNIN = "email_for_signin" // Ahora usado para verificar estado si se cierra app
 private const val KEY_MEDICAMENTOS = "medicamentos_guardados"
+private const val KEY_PASSWORD_FOR_SIGNIN= "password_for_signin"
 
 fun setUserRegistered(context: Context) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -38,16 +39,17 @@ fun clearUserPrefs(context: Context) {
 fun saveUserProfile(context: Context, user: UserData) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     prefs.edit().apply {
-        putString("name", user.name)
-        putString("lastName", user.lastName)
+        putString("name",           user.name)
+        putString("lastName",       user.lastName)
         putString("secondLastName", user.secondLastName)
-        putString("email", user.email)
-        putString("telephone", user.telephone)
-        putString("birthDay", user.birthDay)
-        putString("state", user.location.state)
-        putString("municipality", user.location.municipality)
-        putString("colony", user.location.colony)
-        putString("street", user.location.street)
+        putString("email",          user.email)
+        putString("password",       user.password)          // ← guardamos password
+        putString("telephone",      user.telephone)
+        putString("birthDay",       user.birthDay)
+        putString("state",          user.location.state)
+        putString("municipality",   user.location.municipality)
+        putString("colony",         user.location.colony)
+        putString("street",         user.location.street)
         apply()
     }
 }
@@ -55,21 +57,31 @@ fun saveUserProfile(context: Context, user: UserData) {
 fun loadUserProfile(context: Context): UserData? {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    val name = prefs.getString("name", null) ?: return null
-    val lastName = prefs.getString("lastName", null) ?: return null
+    val name           = prefs.getString("name", null)           ?: return null
+    val lastName       = prefs.getString("lastName", null)       ?: return null
     val secondLastName = prefs.getString("secondLastName", null) ?: return null
-    val email = prefs.getString("email", null) ?: return null
-    val telephone = prefs.getString("telephone", null) ?: return null
-    val birthDay = prefs.getString("birthDay", null) ?: return null
+    val email          = prefs.getString("email", null)          ?: return null
+    val password       = prefs.getString("password", null)       ?: ""   // si no existía, dejamos cadena vacía
+    val telephone      = prefs.getString("telephone", null)      ?: return null
+    val birthDay       = prefs.getString("birthDay", null)       ?: return null
 
-    val state = prefs.getString("state", "") ?: ""
+    val state        = prefs.getString("state", "")        ?: ""
     val municipality = prefs.getString("municipality", "") ?: ""
-    val colony = prefs.getString("colony", "") ?: ""
-    val street = prefs.getString("street", "") ?: ""
+    val colony       = prefs.getString("colony", "")       ?: ""
+    val street       = prefs.getString("street", "")       ?: ""
 
     val location = Location(state, municipality, colony, street)
 
-    return UserData(name, lastName, secondLastName, email, telephone, birthDay, location)
+    return UserData(
+        name           = name,
+        lastName       = lastName,
+        secondLastName = secondLastName,
+        email          = email,
+        password       = password,
+        telephone      = telephone,
+        birthDay       = birthDay,
+        location       = location
+    )
 }
 
 // aqui guardaremos las preferencias o de forma local pero para medicamentos
