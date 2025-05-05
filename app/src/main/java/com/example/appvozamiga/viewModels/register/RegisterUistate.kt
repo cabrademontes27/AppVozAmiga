@@ -10,5 +10,12 @@ data class RegisterUiState(
     val isVerified: Boolean = false,
     val isSuccess: Boolean = false,
     val shouldNavigateToMenu: Boolean = false,
+    val shouldNavigateToLogin: Boolean = false
 
 )
+
+sealed class RegisterCheckResult {
+    object ExisteYVerificado : RegisterCheckResult()
+    object ExistePeroNoVerificado : RegisterCheckResult()
+    object NoExiste : RegisterCheckResult()
+}
