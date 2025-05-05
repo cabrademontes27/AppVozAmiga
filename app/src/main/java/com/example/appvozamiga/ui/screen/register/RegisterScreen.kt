@@ -22,8 +22,11 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuDefaults.outlinedTextFieldColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -42,32 +45,43 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.appvozamiga.R
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.example.appvozamiga.viewModels.register.RegisterViewModel
 import com.example.appvozamiga.data.models.saveSignInEmail
 
 
 @Composable
-fun RegisterScreen(viewModel: RegisterViewModel, onRegisterComplete: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+fun RegisterScreen(
+    viewModel: RegisterViewModel,
+    onRegisterComplete: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Register(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(16.dp),
             viewModel = viewModel,
+            onRegisterComplete = onRegisterComplete    // ← pasa el callback
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ContextCastToActivity")
 @Composable
 fun Register(
     modifier: Modifier,
     viewModel: RegisterViewModel,
+    onRegisterComplete: () -> Unit           // ← recíbelo aquí
 ) {
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState
+
+    // 🔁 Si el correo ya está registrado y verificado, redirigir al login
+    if (uiState.shouldNavigateToLogin) {
+        onRegisterComplete()                    // ← llama al callback
+        viewModel.resetLoginNavigationFlag()    // ← limpia el flag
+    }
     //var isLoading = mutableStateOf(false)
     //var isSuccess = mutableStateOf(false)
 
@@ -86,6 +100,7 @@ fun Register(
     val email by viewModel.email.observeAsState("")
 
     val context = LocalContext.current
+    var password by remember { mutableStateOf("") }
 
 
 
@@ -130,6 +145,21 @@ fun Register(
         TelephoneField(telephone) { viewModel.onTelephoneChange(it) }
         Spacer(modifier = Modifier.height(10.dp))
 
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Contraseña") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth(),
+            colors = outlinedTextFieldColors(
+                focusedBorderColor   = Color(0xFFA4937F),
+                unfocusedBorderColor = Color.Gray
+            )
+        )
+        Spacer(Modifier.height(20.dp))
+
 
 
         Button(
@@ -140,6 +170,7 @@ fun Register(
                     lastName = lastName,
                     secondLastName = secondLastName,
                     email = email,
+                    password = password,
                     telephone = telephone,
                     birthDay = birthDay,
                     state = state,
@@ -152,7 +183,7 @@ fun Register(
                 // 3. Guardar que ya se registró (si lo usas para controlar flujo)
 
             },
-            enabled = isEnabled,
+            enabled = isEnabled && password.isNotBlank(),  // Habilita solo si password no está vacío
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
