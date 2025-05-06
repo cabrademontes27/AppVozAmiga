@@ -10,6 +10,7 @@ private const val KEY_IS_REGISTERED = "is_registered"
 private const val KEY_EMAIL_FOR_SIGNIN = "email_for_signin" // Ahora usado para verificar estado si se cierra app
 private const val KEY_MEDICAMENTOS = "medicamentos_guardados"
 private const val KEY_PASSWORD_FOR_SIGNIN= "password_for_signin"
+private const val KEY_USER_ID = "user_id"
 
 fun setUserRegistered(context: Context) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -103,5 +104,15 @@ fun loadMedications(context: Context): List<Medications> {
     } else {
         emptyList()
     }
+}
+
+fun saveUserId(context: Context, id: String) {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    prefs.edit().putString(KEY_USER_ID, id).apply()
+}
+
+fun getUserId(context: Context): String? {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    return prefs.getString(KEY_USER_ID, null)
 }
 
