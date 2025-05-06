@@ -44,6 +44,7 @@ android {
 
 dependencies {
 
+    implementation ("com.google.zxing:core:3.5.2")
     implementation ("com.alphacephei:vosk-android:0.3.47")
     implementation("androidx.compose.material:material-icons-extended")
     implementation ("com.google.android.gms:play-services-location:21.0.1")
