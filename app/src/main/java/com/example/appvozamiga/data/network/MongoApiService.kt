@@ -43,6 +43,9 @@ interface MongoApiService {
     @DELETE("api/medicamentos/{id}")
     suspend fun deleteMedications(@Path("id") id: String): Response<Unit>
 
+    @GET("/api/user/id")
+    suspend fun getUserIdByEmail(@Query("email") email: String): Response<IdResponse>
+
 
 
 
