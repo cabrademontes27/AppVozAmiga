@@ -59,4 +59,17 @@ object MongoUserRepository {
             null
         }
     }
+
+    suspend fun getUserId(email: String): String? {
+        return try {
+            val response = RetrofitClient.apiService.getUserIdByEmail(email)
+            if (response.isSuccessful) {
+                response.body()?.id
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
