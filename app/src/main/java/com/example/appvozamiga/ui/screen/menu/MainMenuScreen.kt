@@ -23,9 +23,12 @@ import androidx.compose.ui.unit.dp
 import com.example.appvozamiga.R
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.appvozamiga.ui.navigation.Routes
+import com.example.appvozamiga.viewModels.menu.MainViewModel
 
 
 //empezar a recrear la imagen de todo lo que contendra el mainMenu
@@ -41,7 +44,8 @@ fun MainMenuScreen(navController: NavController) {
         MenuItem("Medicamentos", painterResource(R.drawable.icon_medicament), Color(0xFF5D9CEC)),
         MenuItem("¿Dónde estoy?", painterResource(R.drawable.icons_ubicacion), Color(0xFF4BC1A5)),
         MenuItem("Leer medicamentos", painterResource(R.drawable.camara_icon), Color(0xFFF6BB42)),
-        MenuItem("Acerca de mi", painterResource(R.drawable.profile), Color(0xFFE9573F))
+        MenuItem("Acerca de mi", painterResource(R.drawable.profile), Color(0xFFE9573F)),
+        MenuItem("Generar QR", painterResource(R.drawable.qr), Color(0xFF9B59B6))
     )
 
     // Mapa para rutas
@@ -49,7 +53,8 @@ fun MainMenuScreen(navController: NavController) {
         "Medicamentos" to Routes.LOADING_TO_DRUGS,
         "¿Dónde estoy?" to Routes.LOADING_TO_LOCATION,
         "Leer medicamentos" to Routes.LOADING_TO_CAMERA,
-        "Acerca de mi" to Routes.LOADING_TO_ABOUT_ME
+        "Acerca de mi" to Routes.LOADING_TO_ABOUT_ME,
+        "Generar QR" to Routes.LOADING_TO_QR
     )
 
     val gridState = rememberLazyGridState()
