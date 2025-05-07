@@ -41,6 +41,8 @@ import androidx.core.content.ContextCompat
 import com.example.appvozamiga.R
 import com.example.appvozamiga.utils.TextToSpeechUtils
 import android.Manifest
+import com.example.appvozamiga.data.models.getUserId
+import com.example.appvozamiga.data.models.saveUserId
 import com.example.appvozamiga.utils.VoskRecognizerUtils
 
 
@@ -61,6 +63,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     var rutaComando by mutableStateOf<String?>(null)
         private set
+
+    var userId by mutableStateOf<String?>(null)
+        private set
+
+    init {
+        // Intenta cargar el userId guardado localmente si ya existe
+        userId = getUserId(appContext)
+    }
 
 
 
@@ -634,6 +644,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun actualizarTextoReconocido(texto: String) {
         recognizedTextVoice = texto
     }
+
+
+
+    // esta parte esta dedicada al generador de QR
+    //
+    fun cargarUserIdDesdeBackend() {
+        val correo = email.value.ifBlank {
+            getUserEmail(appContext) ?: run {
+                Log.e("MainViewModel", "❌ No se pudo cargar el correo desde preferencias ni desde memoria.")
+                return
+            }
+        }
+
+        Log.d("MainViewModel", "📧 Solicitando userId con correo: $correo")
+
+        viewModelScope.launch {
+            val id = MongoUserRepository.getUserId(correo)
+            userId = id
+            if (id != null) {
+                Log.d("MainViewModel", "✅ ID recibido: $id")
+                saveUserId(appContext, id)
+            } else {
+                Log.e("MainViewModel", "❌ No se pudo obtener el ID del backend")
+            }
+        }
+    }
+
+
+
+
+
 
 
 }
