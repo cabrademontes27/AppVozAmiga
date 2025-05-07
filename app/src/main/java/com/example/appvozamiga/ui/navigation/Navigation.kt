@@ -42,7 +42,7 @@ import com.example.appvozamiga.data.models.saveSignInEmail
 import com.example.appvozamiga.data.models.setUserRegistered
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
-
+import com.example.appvozamiga.ui.screen.menu.functions.QrScreen
 
 
 @Composable
@@ -184,6 +184,15 @@ fun AppNavigation() {
                     }
                 )
             }
+
+            composable(Routes.LOADING_TO_QR) {
+                LoadingRedirectScreen(navController, Routes.QR)
+            }
+            composable(Routes.QR) {
+                QrScreen(navController = navController)
+            }
+
+
 
             // Main menu
             composable(Routes.MAIN_MENU) {

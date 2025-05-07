@@ -7,6 +7,10 @@ object Routes {
     const val MAIN_MENU = "main_menu"
     const val SUCCESS = "success"
     const val LOGIN = "login"
+    const val LOADING_TO_QR = "loading_to_qr"
+    const val QR = "qr_screen"
+
+
 
     // Functional screens
     const val DRUGS = "drugs"
