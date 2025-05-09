@@ -15,7 +15,6 @@ import com.example.appvozamiga.ui.screen.menu.functions.CameraScreen
 import com.example.appvozamiga.ui.screen.menu.functions.DrugsScreen
 import com.example.appvozamiga.ui.screen.menu.functions.UbicationScreen
 import com.example.appvozamiga.ui.screen.register.RegisterScreen
-import com.example.appvozamiga.ui.screen.splash.LoadingRedirectScreen
 import com.example.appvozamiga.ui.screen.splash.LoadingScreen
 import com.example.appvozamiga.ui.screen.splash.SplashScreen
 import com.example.appvozamiga.ui.screen.splash.SuccessScreen
@@ -43,11 +42,7 @@ import com.example.appvozamiga.data.models.setUserRegistered
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
 import com.example.appvozamiga.ui.screen.menu.functions.QrScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.appvozamiga.data.models.*
-import com.example.appvozamiga.ui.screen.menu.functions.*
-import com.example.appvozamiga.viewModels.menu.*
-import com.example.appvozamiga.ui.screen.menu.functions.*
+
 
 
 
