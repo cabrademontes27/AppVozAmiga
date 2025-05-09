@@ -9,7 +9,9 @@ data class UserData(
     val telephone: String = "",
     val birthDay: String = "",
     val location: Location = Location(),
-    val emergencyContacts: List<EmergencyContact> = emptyList()
+    val emergencyContacts: List<EmergencyContact> = emptyList(),
+    val bloodType: String = "",
+    val disabilityDescription: String = ""
 )
 
 data class Location(
