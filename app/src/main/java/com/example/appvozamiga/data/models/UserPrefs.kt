@@ -11,6 +11,7 @@ private const val KEY_EMAIL_FOR_SIGNIN = "email_for_signin" // Ahora usado para 
 private const val KEY_MEDICAMENTOS = "medicamentos_guardados"
 private const val KEY_PASSWORD_FOR_SIGNIN= "password_for_signin"
 private const val KEY_USER_ID = "user_id"
+private const val KEY_EMERGENCY_CONTACTS = "emergency_contacts"
 
 fun setUserRegistered(context: Context) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -114,5 +115,23 @@ fun saveUserId(context: Context, id: String) {
 fun getUserId(context: Context): String? {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     return prefs.getString(KEY_USER_ID, null)
+}
+
+
+fun saveEmergencyContacts(context: Context, contacts: List<EmergencyContact>) {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val json = Gson().toJson(contacts)
+    prefs.edit().putString(KEY_EMERGENCY_CONTACTS, json).apply()
+}
+
+fun loadEmergencyContacts(context: Context): List<EmergencyContact> {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val json = prefs.getString(KEY_EMERGENCY_CONTACTS, null)
+    return if (json != null) {
+        val type = object : TypeToken<List<EmergencyContact>>() {}.type
+        Gson().fromJson(json, type)
+    } else {
+        emptyList()
+    }
 }
 
