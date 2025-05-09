@@ -56,6 +56,8 @@ fun AboutMeScreen(navController: NavController) {
     val municipality = mainViewModel.municipality.value
     val colony = mainViewModel.colony.value
     val street = mainViewModel.street.value
+    val bloodType = mainViewModel.bloodType.value
+    val disabilityDescription = mainViewModel.disabilityDescription.value
 
     val emergencyContacts = mainViewModel.emergencyContacts
 
@@ -145,6 +147,13 @@ fun AboutMeScreen(navController: NavController) {
                 ProfileField("Colonia", colony, SubtleText, AccentText)
                 ProfileField("Calle", street, SubtleText, AccentText)
             }
+
+
+            ProfileSection("Datos de Emergencia", AccentText, SubtleText) {
+                ProfileField("Tipo de Sangre", bloodType, SubtleText, AccentText)
+                ProfileField("Discapacidad", disabilityDescription, SubtleText, AccentText)
+            }
+
 
             Text("Contactos de Emergencia", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = AccentText, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
 
