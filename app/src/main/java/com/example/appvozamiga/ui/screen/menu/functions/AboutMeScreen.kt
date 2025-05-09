@@ -25,7 +25,8 @@ import androidx.navigation.NavController
 import com.example.appvozamiga.viewModels.menu.MainViewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.example.appvozamiga.data.models.getUserEmail
+import androidx.compose.material.icons.filled.Delete
+import com.example.appvozamiga.data.models.EmergencyContact
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,6 +34,8 @@ import com.example.appvozamiga.data.models.getUserEmail
 fun AboutMeScreen(navController: NavController) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
+    var selectedContactIndex by remember { mutableStateOf(-1) }
+    var showEditContactDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val mainViewModel: MainViewModel = viewModel(factory = viewModelFactory {
@@ -40,7 +43,6 @@ fun AboutMeScreen(navController: NavController) {
     })
 
     LaunchedEffect(Unit) {
-        val savedEmail = getUserEmail(context)
         mainViewModel.checkAndLoadProfile(context)
     }
 
@@ -54,6 +56,8 @@ fun AboutMeScreen(navController: NavController) {
     val municipality = mainViewModel.municipality.value
     val colony = mainViewModel.colony.value
     val street = mainViewModel.street.value
+
+    val emergencyContacts = mainViewModel.emergencyContacts
 
     val PrimaryColor = Color(0xFFA8957D)
     val CardColor = Color(0xFFD5CABA)
@@ -71,9 +75,7 @@ fun AboutMeScreen(navController: NavController) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = AccentText)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         containerColor = Color.White
@@ -85,7 +87,6 @@ fun AboutMeScreen(navController: NavController) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // 🧑 Avatar card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -99,17 +100,11 @@ fun AboutMeScreen(navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
                         IconButton(onClick = { showEditDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Editar perfil",
-                                tint = AccentText
-                            )
+                            Icon(Icons.Default.Edit, contentDescription = "Editar perfil", tint = AccentText)
                         }
                     }
                     Box(
@@ -126,68 +121,91 @@ fun AboutMeScreen(navController: NavController) {
                             fontWeight = FontWeight.Bold
                         )
                     }
-
                     Spacer(modifier = Modifier.height(12.dp))
-
                     Text(
                         text = "$name $lastName $secondLastName".trim(),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = AccentText
                     )
-
                     Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = email,
-                        fontSize = 14.sp,
-                        color = SubtleText
-                    )
+                    Text(text = email, fontSize = 14.sp, color = SubtleText)
                 }
             }
 
-            ProfileSection(title = "Información Personal", accent = AccentText, subtle = SubtleText) {
-                ProfileField("Fecha de Nacimiento", birthDay, subtle = SubtleText, accent = AccentText)
-                ProfileField("Correo Electrónico", email, subtle = SubtleText, accent = AccentText)
-                ProfileField("Teléfono", telephone, subtle = SubtleText, accent = AccentText)
+            ProfileSection("Información Personal", AccentText, SubtleText) {
+                ProfileField("Fecha de Nacimiento", birthDay, SubtleText, AccentText)
+                ProfileField("Correo Electrónico", email, SubtleText, AccentText)
+                ProfileField("Teléfono", telephone, SubtleText, AccentText)
             }
 
-            ProfileSection(title = "Dirección", accent = AccentText, subtle = SubtleText) {
-                ProfileField("Estado", state, subtle = SubtleText, accent = AccentText)
-                ProfileField("Municipio", municipality, subtle = SubtleText, accent = AccentText)
-                ProfileField("Colonia", colony, subtle = SubtleText, accent = AccentText)
-                ProfileField("Calle", street, subtle = SubtleText, accent = AccentText)
+            ProfileSection("Dirección", AccentText, SubtleText) {
+                ProfileField("Estado", state, SubtleText, AccentText)
+                ProfileField("Municipio", municipality, SubtleText, AccentText)
+                ProfileField("Colonia", colony, SubtleText, AccentText)
+                ProfileField("Calle", street, SubtleText, AccentText)
             }
 
-            Text(
-                text = "Contactos de Emergencia",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = AccentText,
-                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-            )
+            Text("Contactos de Emergencia", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = AccentText, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
 
-            SimpleContactCard("Andrea López", "Hermana", "+52 921 555 6789", CardColor, AccentText, SubtleText, PrimaryColor)
-            SimpleContactCard("Carlos Méndez", "Papá", "+52 921 111 2233", CardColor, AccentText, SubtleText, PrimaryColor)
-            SimpleContactCard("Valeria Torres", "Amiga", "+52 921 444 7890", CardColor, AccentText, SubtleText, PrimaryColor)
+            if (emergencyContacts.size < 3) {
+                OutlinedButton(
+                    onClick = {
+                        selectedContactIndex = -1
+                        showEditContactDialog = true
+                    },
+                    enabled = emergencyContacts.size < 3,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    Text("Agregar contacto")
+                }
+            }
 
+            emergencyContacts.forEachIndexed { index, contact ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardColor)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Column {
+                                Text(contact.name, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = AccentText)
+                                Text("Relación: ${contact.relation}", fontSize = 14.sp, color = SubtleText)
+                                Text("Teléfono: ${contact.phone}", fontSize = 14.sp, color = PrimaryColor)
+                            }
+                            Row {
+                                IconButton(onClick = {
+                                    selectedContactIndex = index
+                                    showEditContactDialog = true
+                                }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Editar contacto", tint = AccentText)
+                                }
+                                IconButton(onClick = {
+                                    mainViewModel.deleteEmergencyContact(index)
+                                }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar contacto", tint = Color.Red)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             Button(
                 onClick = { showDeleteDialog = true },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
             ) {
                 Text("Eliminar Cuenta", color = Color.White)
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
+
         if (showEditDialog) {
-            EditProfileDialog(
-                mainViewModel = mainViewModel,
-                onDismiss = { showEditDialog = false }
-            )
+            EditProfileDialog(mainViewModel = mainViewModel, onDismiss = { showEditDialog = false })
         }
 
         if (showDeleteDialog) {
@@ -214,58 +232,32 @@ fun AboutMeScreen(navController: NavController) {
             )
         }
 
+        if (showEditContactDialog) {
+            EmergencyContactDialogScreen(
+                initialContact = if (selectedContactIndex != -1) emergencyContacts[selectedContactIndex] else EmergencyContact(),
+                index = if (selectedContactIndex != -1) selectedContactIndex else null,
+                mainViewModel = mainViewModel,
+                onDismiss = { showEditContactDialog = false }
+            )
+        }
+
     }
 }
 
 @Composable
 private fun ProfileSection(title: String, accent: Color, subtle: Color, content: @Composable () -> Unit) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        Text(
-            text = title,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = accent,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        Text(title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = accent, modifier = Modifier.padding(bottom = 8.dp))
         content()
-        Divider(
-            modifier = Modifier.padding(vertical = 8.dp),
-            color = subtle.copy(alpha = 0.3f)
-        )
+        Divider(modifier = Modifier.padding(vertical = 8.dp), color = subtle.copy(alpha = 0.3f))
     }
 }
 
 @Composable
 private fun ProfileField(label: String, value: String, subtle: Color, accent: Color) {
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            color = subtle
-        )
-        Text(
-            text = if (value.isNotEmpty()) value else "No especificado",
-            fontSize = 16.sp,
-            color = accent,
-            modifier = Modifier.padding(top = 2.dp)
-        )
+        Text(label, fontSize = 14.sp, color = subtle)
+        Text(if (value.isNotEmpty()) value else "No especificado", fontSize = 16.sp, color = accent, modifier = Modifier.padding(top = 2.dp))
     }
 }
 
-@Composable
-private fun SimpleContactCard(name: String, relation: String, phone: String, bg: Color, accent: Color, subtle: Color, primary: Color) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        colors = CardDefaults.cardColors(containerColor = bg)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = name, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = accent)
-            Text(text = "Relación: $relation", fontSize = 14.sp, color = subtle)
-            Text(text = "Teléfono: $phone", fontSize = 14.sp, color = primary, modifier = Modifier.padding(top = 4.dp))
-        }
-    }
-}
