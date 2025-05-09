@@ -136,7 +136,7 @@ object VoskRecognizerUtils {
                 val duracion = mensajeCamara.estimateSpeechDuration()
 
                 TextToSpeechUtils.hablarConCallback(mensajeCamara, "CAMARA") {
-                    viewModel.navegarARutaPorVoz(Routes.LOADING_TO_CAMERA)
+                    viewModel.navegarARutaPorVoz(Routes.CAMERA)
 
                     Handler(Looper.getMainLooper()).postDelayed({
                         TextToSpeechUtils.liberar()

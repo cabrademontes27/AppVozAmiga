@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Environment
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream

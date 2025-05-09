@@ -44,7 +44,7 @@ fun saveUserProfile(context: Context, user: UserData) {
         putString("lastName",       user.lastName)
         putString("secondLastName", user.secondLastName)
         putString("email",          user.email)
-        putString("password",       user.password)          // ← guardamos password
+        putString("password",       user.password)
         putString("telephone",      user.telephone)
         putString("birthDay",       user.birthDay)
         putString("state",          user.location.state)
@@ -62,7 +62,7 @@ fun loadUserProfile(context: Context): UserData? {
     val lastName       = prefs.getString("lastName", null)       ?: return null
     val secondLastName = prefs.getString("secondLastName", null) ?: return null
     val email          = prefs.getString("email", null)          ?: return null
-    val password       = prefs.getString("password", null)       ?: ""   // si no existía, dejamos cadena vacía
+    val password       = prefs.getString("password", null)       ?: ""
     val telephone      = prefs.getString("telephone", null)      ?: return null
     val birthDay       = prefs.getString("birthDay", null)       ?: return null
 

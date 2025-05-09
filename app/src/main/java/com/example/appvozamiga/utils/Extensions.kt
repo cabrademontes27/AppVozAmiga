@@ -5,7 +5,6 @@ import android.graphics.ImageFormat
 import android.graphics.YuvImage
 import androidx.camera.core.ImageProxy
 import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
 
 fun ImageProxy.toBitmap(): Bitmap? {
     val yBuffer = planes[0].buffer

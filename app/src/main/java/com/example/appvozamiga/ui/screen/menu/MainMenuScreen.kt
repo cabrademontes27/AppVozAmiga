@@ -23,12 +23,15 @@ import androidx.compose.ui.unit.dp
 import com.example.appvozamiga.R
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.text.style.TextAlign
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.appvozamiga.ui.navigation.Routes
-import com.example.appvozamiga.viewModels.menu.MainViewModel
+import android.app.Activity
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+
 
 
 //empezar a recrear la imagen de todo lo que contendra el mainMenu
@@ -40,6 +43,34 @@ data class MenuItem(
 
 @Composable
 fun MainMenuScreen(navController: NavController) {
+    val context = LocalContext.current
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = true) {
+        showExitDialog = true
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("¿Deseas salir de la aplicación?") },
+            text = { Text("Presiona salir para cerrar la app.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showExitDialog = false
+                    (context as Activity).finish()
+                }) {
+                    Text("Salir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     val menuItems = listOf(
         MenuItem("Medicamentos", painterResource(R.drawable.icon_medicament), Color(0xFF5D9CEC)),
         MenuItem("¿Dónde estoy?", painterResource(R.drawable.icons_ubicacion), Color(0xFF4BC1A5)),
@@ -50,12 +81,13 @@ fun MainMenuScreen(navController: NavController) {
 
     // Mapa para rutas
     val navigationMap = mapOf(
-        "Medicamentos" to Routes.LOADING_TO_DRUGS,
-        "¿Dónde estoy?" to Routes.LOADING_TO_LOCATION,
-        "Leer medicamentos" to Routes.LOADING_TO_CAMERA,
-        "Acerca de mi" to Routes.LOADING_TO_ABOUT_ME,
-        "Generar QR" to Routes.LOADING_TO_QR
+        "Medicamentos" to Routes.DRUGS,
+        "¿Dónde estoy?" to Routes.LOCATION,
+        "Leer medicamentos" to Routes.CAMERA,
+        "Acerca de mi" to Routes.ABOUT_ME,
+        "Generar QR" to Routes.QR
     )
+
 
     val gridState = rememberLazyGridState()
 
@@ -69,7 +101,6 @@ fun MainMenuScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(24.dp)
         ) {
-            // Encabezado
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -77,7 +108,7 @@ fun MainMenuScreen(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
-                    painter = painterResource(R.drawable.logo), // Luego agregamos algo
+                    painter = painterResource(R.drawable.logo),
                     contentDescription = "App Logo",
                     modifier = Modifier.size(80.dp)
                 )
@@ -100,7 +131,6 @@ fun MainMenuScreen(navController: NavController) {
                 )
             }
 
-            // Grid de botones
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 state = gridState,
@@ -111,7 +141,10 @@ fun MainMenuScreen(navController: NavController) {
                 items(menuItems) { item ->
                     MenuButton(item) {
                         navigationMap[item.title]?.let { route ->
-                            navController.navigate(route)
+                            navController.navigate(route) {
+                                popUpTo(Routes.MAIN_MENU) { inclusive = false }
+                                launchSingleTop = true
+                            }
                         }
                     }
                 }
@@ -140,7 +173,7 @@ fun MenuButton(item: MenuItem, onClick: () -> Unit) {
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp), // separa icono y texto
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)

@@ -39,17 +39,17 @@ fun BottomBar(navController: NavController) {
             label = "Inicio"
         ),
         BottomNavItem(
-            route = Routes.LOADING_TO_DRUGS,
+            route = Routes.DRUGS,
             icon = painterResource(id = R.drawable.icon_medicament),
             label = "Medicamentos"
         ),
         BottomNavItem(
-            route = Routes.LOADING_TO_LOCATION,
+            route = Routes.LOCATION,
             icon = painterResource(id = R.drawable.icons_ubicacion),
             label = "Ubicación"
         ),
         BottomNavItem(
-            route = Routes.LOADING_TO_ABOUT_ME,
+            route = Routes.ABOUT_ME,
             icon = painterResource(id = R.drawable.profile),
             label = "Perfil"
         )
@@ -58,7 +58,6 @@ fun BottomBar(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Añadir efecto de elevación y transparencia
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -85,11 +84,10 @@ fun BottomBar(navController: NavController) {
                     isSelected = currentRoute == item.route,
                     onClick = {
                         navController.navigate(item.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                            popUpTo(Routes.MAIN_MENU) {
+                                inclusive = false
                             }
                             launchSingleTop = true
-                            restoreState = true
                         }
                     }
                 )
@@ -155,7 +153,6 @@ private fun BottomBarItem(
             overflow = TextOverflow.Ellipsis
         )
 
-        // Indicador de selección
         if (isSelected) {
             Spacer(modifier = Modifier.height(2.dp))
             Box(
