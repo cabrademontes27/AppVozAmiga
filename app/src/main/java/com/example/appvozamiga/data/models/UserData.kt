@@ -8,7 +8,8 @@ data class UserData(
     val password: String = "",
     val telephone: String = "",
     val birthDay: String = "",
-    val location: Location = Location()
+    val location: Location = Location(),
+    val emergencyContacts: List<EmergencyContact> = emptyList()
 )
 
 data class Location(
@@ -16,4 +17,10 @@ data class Location(
     val municipality: String = "",
     val colony: String = "",
     val street: String = ""
+)
+
+data class EmergencyContact(
+    val name: String = "",
+    val relation: String = "",
+    val phone: String = ""
 )
