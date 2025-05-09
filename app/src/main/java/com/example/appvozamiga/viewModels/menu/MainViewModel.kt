@@ -29,9 +29,9 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import kotlinx.coroutines.launch
 import java.util.Locale
-import com.example.appvozamiga.data.models.Location as UserLocation
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import com.example.appvozamiga.data.models.*
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.example.appvozamiga.data.models.Medications
 import com.example.appvozamiga.data.models.loadMedications
@@ -42,6 +42,7 @@ import com.example.appvozamiga.R
 import com.example.appvozamiga.utils.TextToSpeechUtils
 import android.Manifest
 import com.example.appvozamiga.data.models.EmergencyContact
+import com.example.appvozamiga.data.models.Location
 import com.example.appvozamiga.data.models.getUserId
 import com.example.appvozamiga.data.models.loadEmergencyContacts
 import com.example.appvozamiga.data.models.saveEmergencyContacts
@@ -97,6 +98,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var municipality = mutableStateOf("")
     var colony = mutableStateOf("")
     var street = mutableStateOf("")
+    var bloodType = mutableStateOf("")
+    var disabilityDescription = mutableStateOf("")
 
     //estados para bloquear o desbloquear pantalla
     var appUiState by mutableStateOf(AppUiState())
@@ -295,6 +298,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         colony.value = user.location.colony
         street.value = user.location.street
         emergencyContacts = user.emergencyContacts
+        bloodType.value = user.bloodType
+        disabilityDescription.value = user.disabilityDescription
     }
 
     fun isInternetAvailable(context: Context): Boolean {
@@ -368,25 +373,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         secondLastName: String,
         birthDay: String,
         telephone: String,
+        street: String,
         state: String,
         municipality: String,
         colony: String,
-        street: String
+        bloodType: String,
+        disabilityDescription: String
     ) {
         this.name.value = name
         this.lastName.value = lastName
         this.secondLastName.value = secondLastName
         this.birthDay.value = birthDay
         this.telephone.value = telephone
+        this.street.value = street
         this.state.value = state
         this.municipality.value = municipality
         this.colony.value = colony
-        this.street.value = street
+        this.bloodType.value = bloodType
+        this.disabilityDescription.value = disabilityDescription
 
-        val user = buildUserData() // metodo para crear un UserData con todos los campos
+        val user = buildUserData()
 
         updateProfile(appContext, user)
     }
+
 
     fun buildUserData(): UserData {
         return UserData(
@@ -396,12 +406,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             email = email.value,
             telephone = telephone.value,
             birthDay = birthDay.value,
-            location = UserLocation(
+            location = Location(
                 state = state.value,
                 municipality = municipality.value,
                 colony = colony.value,
                 street = street.value
             ),
+            bloodType = bloodType.value,
+            disabilityDescription = disabilityDescription.value,
             emergencyContacts = emergencyContacts
         )
     }
