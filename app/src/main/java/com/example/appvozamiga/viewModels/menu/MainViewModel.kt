@@ -41,7 +41,10 @@ import androidx.core.content.ContextCompat
 import com.example.appvozamiga.R
 import com.example.appvozamiga.utils.TextToSpeechUtils
 import android.Manifest
+import com.example.appvozamiga.data.models.EmergencyContact
 import com.example.appvozamiga.data.models.getUserId
+import com.example.appvozamiga.data.models.loadEmergencyContacts
+import com.example.appvozamiga.data.models.saveEmergencyContacts
 import com.example.appvozamiga.data.models.saveUserId
 import com.example.appvozamiga.utils.VoskRecognizerUtils
 
@@ -71,6 +74,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Intenta cargar el userId guardado localmente si ya existe
         userId = getUserId(appContext)
     }
+
+    var emergencyContacts by mutableStateOf<List<EmergencyContact>>(emptyList())
+        private set
+
 
 
 
@@ -266,11 +273,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveDataLocally(context: Context, userData: UserData) {
         saveUserProfile(context, userData)
+        saveEmergencyContacts(context, emergencyContacts)
     }
 
     fun loadLocalData(context: Context) {
         val user = loadUserProfile(context) ?: return
         loadValues(user)
+        emergencyContacts = loadEmergencyContacts(context)
     }
 
 
@@ -285,6 +294,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         municipality.value = user.location.municipality
         colony.value = user.location.colony
         street.value = user.location.street
+        emergencyContacts = user.emergencyContacts
     }
 
     fun isInternetAvailable(context: Context): Boolean {
@@ -391,7 +401,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 municipality = municipality.value,
                 colony = colony.value,
                 street = street.value
-            )
+            ),
+            emergencyContacts = emergencyContacts
         )
     }
 
@@ -669,6 +680,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 Log.e("MainViewModel", "❌ No se pudo obtener el ID del backend")
             }
         }
+    }
+
+
+    // esta seccion es para los contanctos de emergencia, proximamente se cambiara
+    // ya que el codigo esta mal ordenado
+    fun addEmergencyContact(contact: EmergencyContact) {
+        if (emergencyContacts.size >= 3) return
+        emergencyContacts = emergencyContacts + contact
+        syncContactsWithProfile()
+    }
+
+    fun updateEmergencyContact(index: Int, updatedContact: EmergencyContact) {
+        if (index !in emergencyContacts.indices) return
+        emergencyContacts = emergencyContacts.toMutableList().also { it[index] = updatedContact }
+        syncContactsWithProfile()
+    }
+
+    fun deleteEmergencyContact(index: Int) {
+        if (index !in emergencyContacts.indices) return
+        emergencyContacts = emergencyContacts.toMutableList().also { it.removeAt(index) }
+        syncContactsWithProfile()
+    }
+
+    private fun syncContactsWithProfile() {
+        val updatedUser = buildUserData().copy(emergencyContacts = emergencyContacts)
+        updateProfile(appContext, updatedUser)
+        saveEmergencyContacts(appContext, emergencyContacts)
     }
 
 
