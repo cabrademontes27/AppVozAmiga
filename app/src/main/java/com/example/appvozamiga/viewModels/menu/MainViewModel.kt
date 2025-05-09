@@ -318,20 +318,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     // 1. Obtener perfil
                     val user = MongoUserRepository.getUserByEmail(email)
                     if (user != null) {
-                        // Guardar perfil en memoria
+                        // Campos básicos
                         name.value = user.name
                         lastName.value = user.lastName
                         secondLastName.value = user.secondLastName
                         this@MainViewModel.email.value = user.email
                         telephone.value = user.telephone
                         birthDay.value = user.birthDay
+
+                        // Dirección
                         state.value = user.location.state
                         municipality.value = user.location.municipality
                         colony.value = user.location.colony
                         street.value = user.location.street
 
-                        // Guardar perfil localmente
+                        // Nuevos datos de perfil
+                        bloodType.value = user.bloodType
+                        disabilityDescription.value = user.disabilityDescription
+
+                        // ← Cargar contactos de emergencia
+                        emergencyContacts = user.emergencyContacts
+
+                        // Guardar localmente perfil y contactos
                         saveUserProfile(context, user)
+                        saveEmergencyContacts(context, user.emergencyContacts)
+                        Log.d("MainViewModel", "EmgContacts: ${user.emergencyContacts}, BloodType: ${user.bloodType}, Disability: ${user.disabilityDescription}")
                         Log.d("MainViewModel", "✅ Perfil cargado desde backend")
                         sincronizarMedicamentosPendientes(context)
                     } else {
