@@ -110,14 +110,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     //aqui es solo la parte visual de funcion de la camara,
     //procesar, limpiar y filtrar texto
 
-    fun processImage(bitmap: Bitmap) {
+    fun processImage(
+        bitmap: Bitmap,
+        onResult: (String) -> Unit
+    ) {
         TextRecognitionUtils.recognizeTextFromBitmap(
             bitmap,
-            onSuccess = {
-                recognizedText = cleanText(it)
+            onSuccess = { raw ->
+                val textoLimpio = cleanText(raw)
+                recognizedText = textoLimpio
+                onResult(textoLimpio)
             },
             onFailure = {
                 recognizedText = "Error: ${it.localizedMessage}"
+                onResult("")
             }
         )
     }

@@ -31,14 +31,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 @Composable
 fun CameraScreen(navController: NavController) {
     val mainViewModel: MainViewModel = viewModel()
-    val recognizedText = mainViewModel.recognizedText
+    val recognizedText by mainViewModel::recognizedText
 
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val executor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
-    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
 
+    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var showSnackbar by remember { mutableStateOf(false) }
+
+    // Permisos de cámara
     val cameraPermissionGranted = remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -47,31 +50,32 @@ fun CameraScreen(navController: NavController) {
             ) == PackageManager.PERMISSION_GRANTED
         )
     }
-
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         cameraPermissionGranted.value = granted
     }
-
     LaunchedEffect(Unit) {
         if (!cameraPermissionGranted.value) {
             launcher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    var showSnackbar by remember { mutableStateOf(false) }
-
+    // Snackbar → Toast
     if (showSnackbar) {
         LaunchedEffect(Unit) {
-            Toast.makeText(context, "Medicamento agregado automáticamente", Toast.LENGTH_SHORT).show()
+            Toast
+                .makeText(context, "Medicamento agregado automáticamente", Toast.LENGTH_SHORT)
+                .show()
             showSnackbar = false
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             if (cameraPermissionGranted.value) {
@@ -100,10 +104,9 @@ fun CameraScreen(navController: NavController) {
                                         imageCapture = captureUseCase
                                     }
                                 } catch (e: Exception) {
-                                    Log.e("CameraScreen", "Error al iniciar la cámara", e)
+                                    Log.e("CameraScreen", "Error al iniciar cámara", e)
                                 }
                             }, ContextCompat.getMainExecutor(ctx))
-
                             previewView
                         },
                         modifier = Modifier
@@ -114,30 +117,41 @@ fun CameraScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(onClick = {
-                        val imageCaptureInstance = imageCapture ?: return@Button
-
-                        imageCaptureInstance.takePicture(
+                        val capture = imageCapture ?: return@Button
+                        capture.takePicture(
                             executor,
                             object : ImageCapture.OnImageCapturedCallback() {
                                 override fun onCaptureSuccess(imageProxy: ImageProxy) {
+                                    // Obtiene y cierra el proxy
                                     val bitmap = imageProxy.toBitmap()
-                                    if (bitmap != null) {
-                                        mainViewModel.processImage(bitmap)
-                                        val texto = mainViewModel.recognizedText
-                                        if (texto.isNotBlank()) {
-                                            mainViewModel.addMedication(
-                                                nombre = "Medicamento por cámara",
-                                                description = texto
-                                            )
-                                            showSnackbar = true
-                                        }
-
-                                    }
                                     imageProxy.close()
+                                    if (bitmap != null) {
+                                        // Procesa imagen y espera texto
+                                        mainViewModel.processImage(bitmap) { texto ->
+                                            if (texto.isNotBlank()) {
+                                                mainViewModel.addMedication(
+                                                    nombre = "Medicamento por cámara",
+                                                    description = texto
+                                                )
+                                                showSnackbar = true
+                                            } else {
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        "No se detectó texto válido",
+                                                        Toast.LENGTH_SHORT
+                                                    )
+                                                    .show()
+                                            }
+                                        }
+                                    }
                                 }
 
                                 override fun onError(exception: ImageCaptureException) {
-                                    Log.e("CameraScreen", "Error al capturar: ${exception.message}")
+                                    Log.e(
+                                        "CameraScreen",
+                                        "Error al capturar: ${exception.message}"
+                                    )
                                 }
                             }
                         )
