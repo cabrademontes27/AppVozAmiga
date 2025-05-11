@@ -26,14 +26,12 @@ object VoskRecognizerUtils {
     private var model: Model? = null
     private var speechService: SpeechService? = null
     private var lastRecognizedCommand: String? = null
-
+    private var isSpeaking = false
 
     fun startRecognition(context: Context, viewModel: MainViewModel) {
+        Log.d("Vosk", "🟢 Iniciando reconocimiento de voz...")
         CoroutineScope(Dispatchers.IO).launch {
-            // 1. Copiar modelo
             copyAssetFolder(context, "vosk-model", File(context.filesDir, "model"))
-
-            // 2. Cargar modelo
             val modelPath = File(context.filesDir, "model").absolutePath
             try {
                 model = Model(modelPath)
@@ -43,7 +41,6 @@ object VoskRecognizerUtils {
                 return@launch
             }
 
-            // 3. Arrancar en Main
             CoroutineScope(Dispatchers.Main).launch {
                 val recognizer = Recognizer(model, 16000.0f)
                 speechService = SpeechService(recognizer, 16000.0f)
@@ -53,8 +50,10 @@ object VoskRecognizerUtils {
     }
 
     private fun startListeningLoop(viewModel: MainViewModel, context: Context) {
+        Log.d("Vosk", "👂 Empezando a escuchar...")
         speechService?.startListening(object : RecognitionListener {
             override fun onPartialResult(hypothesis: String?) {
+                if (isSpeaking) return
                 val partial = hypothesis
                     ?.let { JSONObject(it).optString("partial") }
                     .orEmpty()
@@ -67,29 +66,27 @@ object VoskRecognizerUtils {
 
                 when {
                     partial.contains("foto") && lastRecognizedCommand != "foto" -> {
-                        Log.d("Vosk", "⚠️ PARCIAL activó comando: foto")
                         lastRecognizedCommand = "foto"
+                        Log.d("Vosk", "⚠️ Reconocido comando: foto")
                         handleVoiceCommand("foto", viewModel, context)
                     }
                     partial.contains("lugar") && lastRecognizedCommand != "lugar" -> {
-                        Log.d("Vosk", "⚠️ PARCIAL activó comando: lugar")
                         lastRecognizedCommand = "lugar"
+                        Log.d("Vosk", "⚠️ Reconocido comando: lugar")
                         handleVoiceCommand("lugar", viewModel, context)
                     }
-                    partial.contains("codigo") && lastRecognizedCommand != "codigo" -> {
-                        Log.d("Vosk", "⚠️ PARCIAL activó comando: codigo")
-                        lastRecognizedCommand = "codigo"
-                        handleVoiceCommand("codigo", viewModel, context)
+                    partial.contains("medicamentos") && lastRecognizedCommand != "medicamentos" -> {
+                        lastRecognizedCommand = "medicamentos"
+                        Log.d("Vosk", "⚠️ Reconocido comando: medicamentos")
+                        handleVoiceCommand("medicamentos", viewModel, context)
                     }
-                    partial.contains("qr") && lastRecognizedCommand != "qr" -> {
-                        Log.d("Vosk", "⚠️ PARCIAL activó comando: qr")
+                    partial.contains("codigo") && lastRecognizedCommand != "qr" -> {
                         lastRecognizedCommand = "qr"
+                        Log.d("Vosk", "⚠️ Reconocido comando: codigo/qr")
                         handleVoiceCommand("qr", viewModel, context)
                     }
                 }
             }
-
-
 
             override fun onFinalResult(hypothesis: String?) {
                 val plain = hypothesis
@@ -99,34 +96,32 @@ object VoskRecognizerUtils {
                     ?.trim()
                     ?: ""
 
-                Log.d("Vosk", "📤 Final result crudo: $hypothesis")
-                if (plain.isBlank()) {
-                    Log.d("Vosk", "⛔ Resultado final vacío, no se procesa")
-                    startListeningLoop(viewModel, context)
+                Log.d("Vosk", "📤 Resultado final: \"$plain\"")
+
+                // ✅ Ignorar si ya se ejecutó el comando parcial
+                if (plain.isBlank() || (lastRecognizedCommand != null && plain.contains(lastRecognizedCommand!!))) {
+                    Log.d("Vosk", "⛔ Resultado final ignorado (ya procesado o vacío)")
                     return
                 }
 
-
-                Log.d("Vosk", "🔍 Comando a procesar: \"$plain\"")
                 handleVoiceCommand(plain, viewModel, context)
-                startListeningLoop(viewModel, context)
             }
 
 
             override fun onError(e: Exception?) {
                 Log.e("Vosk", "❌ Error en reconocimiento", e)
-                startListeningLoop(viewModel, context)
             }
 
             override fun onTimeout() {
-                startListeningLoop(viewModel, context)
+                Log.w("Vosk", "⏰ Reconocimiento terminado por inactividad")
             }
 
-            override fun onResult(hypothesis: String?) { /* opcional */ }
+            override fun onResult(hypothesis: String?) {}
         })
     }
 
     fun stopRecognition() {
+        Log.d("Vosk", "🛑 Reconocimiento detenido")
         speechService?.stop()
         speechService = null
     }
@@ -137,108 +132,103 @@ object VoskRecognizerUtils {
     }
 
     fun handleVoiceCommand(cmd: String, viewModel: MainViewModel, context: Context) {
+        stopRecognition()
+        Log.d("Vosk", "▶️ Ejecutando comando: $cmd")
+
         when {
             cmd.contains("foto") -> {
                 TextToSpeechUtils.detener()
                 viewModel.setLocked(context, false)
 
-                val mensajeCamara = "Abriendo la cámara"
-                val duracion = mensajeCamara.estimateSpeechDuration()
+                val mensaje = "Abriendo la cámara"
+                val duracion = mensaje.estimateSpeechDuration()
 
-                TextToSpeechUtils.hablarConCallback(mensajeCamara, "CAMARA") {
+                TextToSpeechUtils.hablarConCallback(mensaje, "CAMARA") {
+                    Log.d("TTS", "✅ TTS finalizado para: CAMARA")
                     viewModel.navegarARutaPorVoz(Routes.CAMERA)
-
                     Handler(Looper.getMainLooper()).postDelayed({
                         TextToSpeechUtils.liberar()
+                        lastRecognizedCommand = null
                     }, duracion + 300)
                 }
-
-                lastRecognizedCommand = null
             }
 
             cmd.contains("lugar") -> {
                 TextToSpeechUtils.detener()
-
                 viewModel.obtenerTextoUbicacion(context) { ubicacionTexto ->
-                    val mensajeUbicacion = "Según mis datos, $ubicacionTexto"
-                    val duracion = mensajeUbicacion.estimateSpeechDuration()
+                    val mensaje = "Según mis datos, $ubicacionTexto"
+                    val duracion = mensaje.estimateSpeechDuration()
 
-                    TextToSpeechUtils.hablarConCallback(mensajeUbicacion, "UBICACION") {
+                    TextToSpeechUtils.hablarConCallback(mensaje, "UBICACION") {
+                        Log.d("TTS", "✅ TTS finalizado para: UBICACION")
                         Handler(Looper.getMainLooper()).postDelayed({
                             TextToSpeechUtils.liberar()
-                            // 🔄 Después de hablar y liberar, ahora sí desbloqueas la pantalla
                             viewModel.setLocked(context, false, hablarDespedida = false)
+                            lastRecognizedCommand = null
                         }, duracion + 500)
                     }
                 }
-
-                lastRecognizedCommand = null
             }
 
             cmd.contains("codigo") || cmd.contains("qr") -> {
                 TextToSpeechUtils.detener()
-                val msg = "Mostrando código "
-                TextToSpeechUtils.hablarConCallback(msg, "QR") {
-                    viewModel.navegarARutaPorVoz(Routes.QR)
+                val mensaje = "Mostrando código"
+                val duracion = mensaje.estimateSpeechDuration()
 
+                TextToSpeechUtils.hablarConCallback(mensaje, "QR") {
+                    Log.d("TTS", "✅ TTS finalizado para: QR")
+                    viewModel.navegarARutaPorVoz(Routes.QR)
                     Handler(Looper.getMainLooper()).postDelayed({
-                        // Cierra bloqueo con despedida activada
                         viewModel.setLocked(context, false, hablarDespedida = true)
-                    }, msg.estimateSpeechDuration() + 300)
+                        lastRecognizedCommand = null
+                    }, duracion + 300)
                 }
-                lastRecognizedCommand = null
             }
 
             cmd.contains("medicamentos") -> {
                 TextToSpeechUtils.detener()
+                isSpeaking = true
 
                 val lista = viewModel.medicationsUiState.medications
                 val total = lista.size
+                val nombres =
+                    lista.map { it.name.trim() }.filter { it.isNotBlank() }.joinToString(", ")
 
-                val nombres = lista.map { it.name.trim() }
-                    .filter { it.isNotBlank() }
-                    .joinToString(", ")
-
-                val msg = when {
+                val mensaje = when {
                     total == 0 -> "No tienes medicamentos registrados."
                     total == 1 -> "Tienes un medicamento registrado. Su nombre es: $nombres"
                     else -> "Tienes un total de $total medicamentos. Sus nombres son: $nombres"
                 }
 
-                val duracion = msg.estimateSpeechDuration()
+                val duracion = mensaje.estimateSpeechDuration()
 
-                TextToSpeechUtils.hablarConCallback(msg, "MED_LIST") {
+                TextToSpeechUtils.hablarConCallback(mensaje, "MED_LIST") {
+                    Log.d("TTS", "✅ TTS finalizado para: MED_LIST")
+                    isSpeaking = false
+
                     Handler(Looper.getMainLooper()).postDelayed({
-                        TextToSpeechUtils.liberar()
-                    }, duracion + 300)
+                        TextToSpeechUtils.hablarConCallback("Hasta luego", "BYE") {
+                            Log.d("TTS", "👋 Despedida finalizada")
+                            TextToSpeechUtils.liberar()
+                            viewModel.setLocked(
+                                context,
+                                false,
+                                hablarDespedida = false
+                            ) // ✅ evitar segunda despedida
+                            lastRecognizedCommand = null
+                        }
+                    }, 1000)
                 }
-
-                lastRecognizedCommand = null
             }
 
-
-
-
-
-
-
-            else -> {
+                else -> {
+                Log.d("Vosk", "❓ Comando no reconocido")
                 TextToSpeechUtils.hablar("No entendí el comando")
                 lastRecognizedCommand = null
             }
         }
     }
 
-}
-
-
-
-
-
-
-
-
-    /** Copia recursivamente assets/<assetDir> dentro de destDir */
     private fun copyAssetFolder(context: Context, assetDir: String, destDir: File) {
         val assetManager = context.assets
         val files = assetManager.list(assetDir) ?: return
@@ -246,14 +236,12 @@ object VoskRecognizerUtils {
 
         for (fileName in files) {
             val assetPath = if (assetDir.isEmpty()) fileName else "$assetDir/$fileName"
-            val outFile   = File(destDir, fileName)
-            val subList   = assetManager.list(assetPath)
+            val outFile = File(destDir, fileName)
+            val subList = assetManager.list(assetPath)
 
             if (subList != null && subList.isNotEmpty()) {
-                // es un directorio
                 copyAssetFolder(context, assetPath, outFile)
             } else {
-                // es un archivo, copiar stream
                 assetManager.open(assetPath).use { input: InputStream ->
                     FileOutputStream(outFile).use { output ->
                         input.copyTo(output)
@@ -261,12 +249,89 @@ object VoskRecognizerUtils {
                 }
             }
         }
-        Log.d("Vosk", "Assets/$assetDir copiado → ${destDir.absolutePath}")
+        Log.d("Vosk", "📦 Modelo copiado desde assets/$assetDir a ${destDir.absolutePath}")
     }
-
-
 
     fun String.removeAccents(): String {
         val nfd = Normalizer.normalize(this, Normalizer.Form.NFD)
         return Regex("\\p{InCombiningDiacriticalMarks}+").replace(nfd, "")
     }
+}
+
+
+
+// ESTA FUNCION SE UTILIZARA CUANDO TODOS LOS COMANDOS ESTEN FINALIZADOS ASI VOLVEREMOS A HACERLO UN ASISTENTE
+//*
+// private fun startListeningLoop(viewModel: MainViewModel, context: Context) {
+//        speechService?.startListening(object : RecognitionListener {
+//            override fun onPartialResult(hypothesis: String?) {
+//                val partial = hypothesis
+//                    ?.let { JSONObject(it).optString("partial") }
+//                    .orEmpty()
+//                    .removeAccents()
+//                    .lowercase()
+//                    .trim()
+//
+//                viewModel.actualizarTextoReconocido(partial)
+//                Log.d("Vosk", "🟡 Parcial recibido: $partial")
+//
+//                when {
+//                    partial.contains("foto") && lastRecognizedCommand != "foto" -> {
+//                        Log.d("Vosk", "⚠️ PARCIAL activó comando: foto")
+//                        lastRecognizedCommand = "foto"
+//                        handleVoiceCommand("foto", viewModel, context)
+//                    }
+//                    partial.contains("lugar") && lastRecognizedCommand != "lugar" -> {
+//                        Log.d("Vosk", "⚠️ PARCIAL activó comando: lugar")
+//                        lastRecognizedCommand = "lugar"
+//                        handleVoiceCommand("lugar", viewModel, context)
+//                    }
+//                    partial.contains("codigo") && lastRecognizedCommand != "codigo" -> {
+//                        Log.d("Vosk", "⚠️ PARCIAL activó comando: codigo")
+//                        lastRecognizedCommand = "codigo"
+//                        handleVoiceCommand("codigo", viewModel, context)
+//                    }
+//                    partial.contains("qr") && lastRecognizedCommand != "qr" -> {
+//                        Log.d("Vosk", "⚠️ PARCIAL activó comando: qr")
+//                        lastRecognizedCommand = "qr"
+//                        handleVoiceCommand("qr", viewModel, context)
+//                    }
+//                }
+//            }
+//
+//
+//
+//            override fun onFinalResult(hypothesis: String?) {
+//                val plain = hypothesis
+//                    ?.let { JSONObject(it).optString("text").ifBlank { JSONObject(it).optString("partial") } }
+//                    ?.removeAccents()
+//                    ?.lowercase()
+//                    ?.trim()
+//                    ?: ""
+//
+//                Log.d("Vosk", "📤 Final result crudo: $hypothesis")
+//                if (plain.isBlank()) {
+//                    Log.d("Vosk", "⛔ Resultado final vacío, no se procesa")
+//                    startListeningLoop(viewModel, context)
+//                    return
+//                }
+//
+//
+//                Log.d("Vosk", "🔍 Comando a procesar: \"$plain\"")
+//                handleVoiceCommand(plain, viewModel, context)
+//                startListeningLoop(viewModel, context)
+//            }
+//
+//
+//            override fun onError(e: Exception?) {
+//                Log.e("Vosk", "❌ Error en reconocimiento", e)
+//                startListeningLoop(viewModel, context)
+//            }
+//
+//            override fun onTimeout() {
+//                startListeningLoop(viewModel, context)
+//            }
+//
+//            override fun onResult(hypothesis: String?) { /* opcional */ }
+//        })
+//    }*//
