@@ -206,6 +206,9 @@ fun AppNavigation() {
             composable(Routes.ABOUT_ME) {
                 AboutMeScreen(navController = navController)
             }
+            composable(Routes.QR) {
+                QrScreen(navController)
+            }
         }
 
         LaunchedEffect(mainViewModel.rutaComando) {

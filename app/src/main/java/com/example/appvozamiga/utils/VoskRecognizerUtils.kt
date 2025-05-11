@@ -76,6 +76,16 @@ object VoskRecognizerUtils {
                         lastRecognizedCommand = "lugar"
                         handleVoiceCommand("lugar", viewModel, context)
                     }
+                    partial.contains("codigo") && lastRecognizedCommand != "codigo" -> {
+                        Log.d("Vosk", "⚠️ PARCIAL activó comando: codigo")
+                        lastRecognizedCommand = "codigo"
+                        handleVoiceCommand("codigo", viewModel, context)
+                    }
+                    partial.contains("qr") && lastRecognizedCommand != "qr" -> {
+                        Log.d("Vosk", "⚠️ PARCIAL activó comando: qr")
+                        lastRecognizedCommand = "qr"
+                        handleVoiceCommand("qr", viewModel, context)
+                    }
                 }
             }
 
@@ -164,6 +174,50 @@ object VoskRecognizerUtils {
 
                 lastRecognizedCommand = null
             }
+
+            cmd.contains("codigo") || cmd.contains("qr") -> {
+                TextToSpeechUtils.detener()
+                val msg = "Mostrando código "
+                TextToSpeechUtils.hablarConCallback(msg, "QR") {
+                    viewModel.navegarARutaPorVoz(Routes.QR)
+
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        // Cierra bloqueo con despedida activada
+                        viewModel.setLocked(context, false, hablarDespedida = true)
+                    }, msg.estimateSpeechDuration() + 300)
+                }
+                lastRecognizedCommand = null
+            }
+
+            cmd.contains("medicamentos") -> {
+                TextToSpeechUtils.detener()
+
+                val lista = viewModel.medicationsUiState.medications
+                val total = lista.size
+
+                val nombres = lista.map { it.name.trim() }
+                    .filter { it.isNotBlank() }
+                    .joinToString(", ")
+
+                val msg = when {
+                    total == 0 -> "No tienes medicamentos registrados."
+                    total == 1 -> "Tienes un medicamento registrado. Su nombre es: $nombres"
+                    else -> "Tienes un total de $total medicamentos. Sus nombres son: $nombres"
+                }
+
+                val duracion = msg.estimateSpeechDuration()
+
+                TextToSpeechUtils.hablarConCallback(msg, "MED_LIST") {
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        TextToSpeechUtils.liberar()
+                    }, duracion + 300)
+                }
+
+                lastRecognizedCommand = null
+            }
+
+
+
 
 
 
