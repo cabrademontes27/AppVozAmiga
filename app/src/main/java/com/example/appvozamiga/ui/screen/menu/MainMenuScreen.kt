@@ -79,7 +79,6 @@ fun MainMenuScreen(navController: NavController) {
         MenuItem("Generar QR", painterResource(R.drawable.qr), Color(0xFF9B59B6))
     )
 
-    // Mapa para rutas
     val navigationMap = mapOf(
         "Medicamentos" to Routes.DRUGS,
         "¿Dónde estoy?" to Routes.LOCATION,
@@ -87,7 +86,6 @@ fun MainMenuScreen(navController: NavController) {
         "Acerca de mi" to Routes.ABOUT_ME,
         "Generar QR" to Routes.QR
     )
-
 
     val gridState = rememberLazyGridState()
 
@@ -150,6 +148,8 @@ fun MainMenuScreen(navController: NavController) {
                 }
             }
         }
+        //aqui esta la funcionalidad de las notas, solo es un componente basico por si se quiere eliminar mas adelante
+        NoteCommandScreenOverlay()
     }
 }
 
