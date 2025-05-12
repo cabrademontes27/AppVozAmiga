@@ -1,7 +1,6 @@
 package com.example.appvozamiga.ui.screen.menu.functions
 
 import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -72,7 +71,7 @@ fun SOSScreen(navController: NavController) {
                 viewModel.obtenerUbicacionConTexto { ubicacion ->
                     val mensaje = "Hola, necesito ayuda. Fuiste agregado como mi contacto de emergencia. Esta es mi ubicación: $ubicacion"
 
-                    viewModel.enviarMensajeSOS(contactos, mensaje) { exito ->
+                    viewModel.sendSmsSOS(contactos, mensaje) { exito ->
                         statusMessage = if (exito) {
                             "✅ Mensaje de SOS enviado correctamente."
                         } else {

@@ -79,6 +79,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var emergencyContacts by mutableStateOf<List<EmergencyContact>>(emptyList())
         private set
 
+    private var intentosSos = 0
+    private var tiempoPrimerSos: Long = 0L
+
+
 
 
 
@@ -736,6 +740,68 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val updatedUser = buildUserData().copy(emergencyContacts = emergencyContacts)
         updateProfile(appContext, updatedUser)
         saveEmergencyContacts(appContext, emergencyContacts)
+    }
+
+    //esta parte esta destinada para mandar mensajes SOS para los contactos de emergencia con twilo
+    // tendra un limite de 3 veces por cada 10 min
+
+
+    fun sendSmsSOS(
+        telefonos: List<String>,
+        mensaje: String,
+        onResultado: (Boolean) -> Unit
+    ) {
+        val ahora = System.currentTimeMillis()
+
+        Log.d("SOS", "🕒 Tiempo actual: $ahora")
+        Log.d("SOS", "📱 Teléfonos recibidos: $telefonos")
+        Log.d("SOS", "✉️ Mensaje: $mensaje")
+
+        // Si es el primer intento, guarda el tiempo
+        if (tiempoPrimerSos == 0L) {
+            tiempoPrimerSos = ahora
+            Log.d("SOS", "⏱️ Inicializando tiempo del primer SOS")
+        }
+
+        val diezMinutosMs = 10 * 60 * 1000
+        if (ahora - tiempoPrimerSos > diezMinutosMs) {
+            Log.d("SOS", "🔄 Más de 10 min pasados. Reiniciando contador de intentos.")
+            intentosSos = 0
+            tiempoPrimerSos = ahora
+        }
+
+        if (intentosSos >= 3) {
+            Log.w("SOS", "🚫 Límite alcanzado de intentos SOS.")
+            Toast.makeText(appContext, "❌ Límite de 3 SOS cada 10 minutos alcanzado.", Toast.LENGTH_LONG).show()
+            onResultado(false)
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val request = SosRequest(to = telefonos, message = mensaje)
+                val response = RetrofitClient.apiService.enviarSOS(request)
+
+                Log.d("SOS", "📡 Enviando request al backend: $request")
+
+
+
+
+                if (response.isSuccessful) {
+                    intentosSos++
+                    val restantes = 3 - intentosSos
+                    Log.d("SOS", "✅ SOS enviado. Intentos usados: $intentosSos, restantes: $restantes")
+                    Toast.makeText(appContext, "✅ SOS enviado. Intentos restantes: $restantes", Toast.LENGTH_LONG).show()
+                    onResultado(true)
+                } else {
+                    Log.e("SOS", "❌ Error respuesta backend: ${response.code()}")
+                    onResultado(false)
+                }
+            } catch (e: Exception) {
+                Log.e("SOS", "❌ Excepción al enviar SOS: ${e.message}")
+                onResultado(false)
+            }
+        }
     }
 
 
