@@ -1,6 +1,7 @@
 package com.example.appvozamiga.data.network
 
 import com.example.appvozamiga.data.models.Medications
+import com.example.appvozamiga.data.models.SosRequest
 import com.example.appvozamiga.data.models.UserData
 import retrofit2.Response
 import retrofit2.http.Body
@@ -46,6 +47,8 @@ interface MongoApiService {
     @GET("/api/user/id")
     suspend fun getUserIdByEmail(@Query("email") email: String): Response<IdResponse>
 
+    @POST("/api/send-sos")
+    suspend fun enviarSOS(@Body body: SosRequest): Response<Unit>
 
 
 
