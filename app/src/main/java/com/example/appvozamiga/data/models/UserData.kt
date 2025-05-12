@@ -26,3 +26,8 @@ data class EmergencyContact(
     val relation: String = "",
     val phone: String = ""
 )
+
+data class SosRequest(
+    val to: List<String>,
+    val message: String
+)
