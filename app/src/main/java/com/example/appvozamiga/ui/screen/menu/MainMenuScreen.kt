@@ -76,7 +76,8 @@ fun MainMenuScreen(navController: NavController) {
         MenuItem("¿Dónde estoy?", painterResource(R.drawable.icons_ubicacion), Color(0xFF4BC1A5)),
         MenuItem("Leer medicamentos", painterResource(R.drawable.camara_icon), Color(0xFFF6BB42)),
         MenuItem("Acerca de mi", painterResource(R.drawable.profile), Color(0xFFE9573F)),
-        MenuItem("Generar QR", painterResource(R.drawable.qr), Color(0xFF9B59B6))
+        MenuItem("Generar QR", painterResource(R.drawable.qr), Color(0xFF9B59B6)),
+        MenuItem("SOS", painterResource(R.drawable.sos), Color(0xFFD63031)),
     )
 
     val navigationMap = mapOf(
@@ -84,7 +85,8 @@ fun MainMenuScreen(navController: NavController) {
         "¿Dónde estoy?" to Routes.LOCATION,
         "Leer medicamentos" to Routes.CAMERA,
         "Acerca de mi" to Routes.ABOUT_ME,
-        "Generar QR" to Routes.QR
+        "Generar QR" to Routes.QR,
+        "SOS" to Routes.SOS
     )
 
     val gridState = rememberLazyGridState()
