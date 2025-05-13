@@ -804,6 +804,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun getLinkLocation(callback: (String) -> Unit) {
+        val permiso = Manifest.permission.ACCESS_FINE_LOCATION
+        if (ContextCompat.checkSelfPermission(appContext, permiso) != PackageManager.PERMISSION_GRANTED) {
+            callback("Permiso de ubicación no concedido.")
+            return
+        }
+
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            5_000L
+        ).build()
+
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            object : LocationCallback() {
+                override fun onLocationResult(result: LocationResult) {
+                    fusedLocationClient.removeLocationUpdates(this)
+                    val loc = result.lastLocation
+                    if (loc != null) {
+                        val link = "https://maps.google.com/?q=${loc.latitude},${loc.longitude}"
+                        callback(link)
+                    } else {
+                        callback("No se pudo obtener la ubicación.")
+                    }
+                }
+            },
+            Looper.getMainLooper()
+        )
+    }
+
+
 
 
 
