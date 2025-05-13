@@ -68,8 +68,8 @@ fun SOSScreen(navController: NavController) {
                     return@Button
                 }
 
-                viewModel.obtenerUbicacionConTexto { ubicacion ->
-                    val mensaje = "Hola, necesito ayuda. Fuiste agregado como mi contacto de emergencia. Esta es mi ubicación: $ubicacion"
+                viewModel.getLinkLocation { ubicacion ->
+                    val mensaje = "SOS, eres mi contacto de emergencia. Ubicación: $ubicacion"
 
                     viewModel.sendSmsSOS(contactos, mensaje) { exito ->
                         statusMessage = if (exito) {
