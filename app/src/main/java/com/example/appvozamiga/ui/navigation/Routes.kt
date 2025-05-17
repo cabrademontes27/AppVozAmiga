@@ -9,6 +9,8 @@ object Routes {
     const val LOGIN = "login"
     const val LOADING_TO_QR = "loading_to_qr"
     const val QR = "qr_screen"
+    const val CONTROLLED_MEDICATIONS = "controlled_drugs"
+
 
 
 
