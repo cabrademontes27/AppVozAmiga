@@ -31,3 +31,10 @@ data class SosRequest(
     val to: List<String>,
     val message: String
 )
+
+data class UbicacionRequest(
+    val email: String,
+    val lat: Double,
+    val lon: Double
+)
+
