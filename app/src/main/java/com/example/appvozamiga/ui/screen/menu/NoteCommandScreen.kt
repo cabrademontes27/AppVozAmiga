@@ -90,6 +90,15 @@ fun NoteCommandScreenOverlay() {
                             Codigo:
                             Te redirigira a mostrar tu codigo QR con tus datos personales
                             NO sensibles
+                            
+                            Compartir:
+                            Este comando lo que hara es compartir tu ubicacion actual por SMS 
+                            a tus contactos de emergencia 
+                            
+                            Vinculacion 
+                            Este leera tu codigo de vinculacion que la podras ingresar
+                            en la pagina web, una tercer persona y te podra monitorear 
+                            tanto ubicacion como medicamentos y de control
                         """.trimIndent(),
                         textAlign = TextAlign.Start,
                         style = MaterialTheme.typography.bodyLarge
