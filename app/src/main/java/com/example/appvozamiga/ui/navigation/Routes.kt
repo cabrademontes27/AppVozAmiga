@@ -18,6 +18,7 @@ object Routes {
     const val CAMERA = "camera"
     const val ABOUT_ME = "about_me"
     const val SOS = "sos_screen"
+    const val LINKING = "linking"
 
 
 

@@ -41,6 +41,7 @@ import com.example.appvozamiga.data.models.saveSignInEmail
 import com.example.appvozamiga.data.models.setUserRegistered
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
+import com.example.appvozamiga.ui.screen.menu.functions.LinkingScreen
 import com.example.appvozamiga.ui.screen.menu.functions.QrScreen
 import com.example.appvozamiga.ui.screen.menu.functions.SOSScreen
 
@@ -210,6 +211,10 @@ fun AppNavigation() {
             composable(Routes.SOS) {
                 SOSScreen(navController = navController)
             }
+            composable(Routes.LINKING) {
+                LinkingScreen(viewModel = mainViewModel)
+            }
+
 
         }
 
