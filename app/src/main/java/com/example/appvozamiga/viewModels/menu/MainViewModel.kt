@@ -42,6 +42,7 @@ import com.example.appvozamiga.R
 import com.example.appvozamiga.utils.TextToSpeechUtils
 import android.Manifest
 import android.content.Intent
+import androidx.compose.runtime.remember
 import com.example.appvozamiga.data.models.EmergencyContact
 import com.example.appvozamiga.data.models.Location
 import com.example.appvozamiga.data.models.getUserId
@@ -53,6 +54,8 @@ import com.example.appvozamiga.utils.VoskRecognizerUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import com.example.appvozamiga.data.models.UbicacionRequest
+import androidx.work.*
+import com.example.appvozamiga.utils.ControlledReminderWorker
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -76,6 +79,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var userId by mutableStateOf<String?>(null)
         private set
 
+    var controlledMedications by mutableStateOf<List<ControlledMedication>>(emptyList())
+        private set
+
+    var medicamentoAEliminar by mutableStateOf<ControlledMedication?>(null)
+
+
     init {
         // Intenta cargar el userId guardado localmente si ya existe
         userId = getUserId(appContext)
@@ -89,6 +98,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     var currentToken by mutableStateOf(generateToken())
     private var tokenJob: Job? = null
+
 
 
 
@@ -1004,6 +1014,145 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 verificarYActivarEnvioUbicacion()
             } else {
                 Log.e("Ubicación", "❌ No se pudo obtener el ID del backend")
+            }
+        }
+    }
+
+    // medicamentos controlados, lo ultimo, faltara refactorizar
+    //pero ya manana zzzzzzzz
+
+    fun addControlledMedicationBackend(
+        context: Context,
+        name: String,
+        description: String,
+        start: Long,
+        end: Long,
+        intervalHours: Int
+    ) {
+        val emailActual = email.value.ifBlank { getUserEmail(appContext).orEmpty() }
+        if (emailActual.isBlank()) {
+            Toast.makeText(context, "Correo no disponible", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val nuevo = ControlledMedication(
+            name = name,
+            description = description,
+            email = emailActual,
+            startDateTime = start,
+            endDateTime = end,
+            intervalHours = intervalHours
+        )
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.addControlledMedication(nuevo)
+                if (response.isSuccessful) {
+                    loadControlledMedicationsBackend(context)
+                    Log.d("ControlledMedication", "✅ Agregado correctamente")
+                } else {
+                    Log.e("ControlledMedication", "❌ Error: ${response.code()}")
+                    Toast.makeText(context, "❌ Error al guardar", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("ControlledMedication", "❌ Excepción: ${e.message}")
+            }
+        }
+    }
+
+    fun loadControlledMedicationsBackend(context: Context) {
+        val correo = email.value.ifBlank { getUserEmail(appContext).orEmpty() }
+        if (correo.isBlank()) return
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.getControlledMedications(correo)
+                if (response.isSuccessful) {
+                    controlledMedications = response.body() ?: emptyList()
+                    Log.d("ControlledMedication", "✅ Cargados correctamente: ${controlledMedications.size}")
+                    controlledMedications.forEach {
+                        programarRecordatorioMedicamento(context, it)
+                    }
+                } else {
+                    Log.e("ControlledMedication", "❌ Error al cargar: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("ControlledMedication", "❌ Excepción al cargar: ${e.message}")
+            }
+        }
+    }
+
+    fun deleteControlledMedicationBackend(context: Context, med: ControlledMedication) {
+        val id = med._id
+        if (id.isNullOrBlank()) {
+            Log.e("ControlledMedication", "❌ No se puede eliminar: ID nulo")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.deleteControlledMedication(id)
+                if (response.isSuccessful) {
+                    controlledMedications = controlledMedications.filterNot { it._id == id }
+                    Log.d("ControlledMedication", "✅ Eliminado correctamente")
+                    Toast.makeText(context, "Medicamento eliminado", Toast.LENGTH_SHORT).show()
+                } else {
+                    Log.e("ControlledMedication", "❌ Falló eliminación: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("ControlledMedication", "❌ Error al eliminar: ${e.message}")
+            }
+        }
+    }
+
+
+
+
+    fun programarRecordatorioMedicamento(context: Context, medicamento: ControlledMedication) {
+        val now = System.currentTimeMillis()
+        val intervaloMs = medicamento.intervalHours * 60 * 60 * 1000
+        var siguienteDosis = medicamento.startDateTime
+
+        // Buscar siguiente dosis futura
+        while (siguienteDosis < now) {
+            siguienteDosis += intervaloMs
+        }
+
+        val recordatorioMs = siguienteDosis - 60 * 60 * 1000  // 1 hora antes
+        if (recordatorioMs < now) return  // Ya pasó
+
+        val delay = recordatorioMs - now
+        val datos = workDataOf("name" to medicamento.name)
+
+        val request = OneTimeWorkRequestBuilder<ControlledReminderWorker>()
+            .setInitialDelay(delay, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .setInputData(datos)
+            .build()
+
+        WorkManager.getInstance(context).enqueue(request)
+    }
+
+    fun updateControlledMedicationBackend(
+        context: Context,
+        medicamento: ControlledMedication,
+        nuevaDescripcion: String
+    ) {
+        val actualizado = medicamento.copy(description = nuevaDescripcion)
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.updateControlledMedication(actualizado._id!!, actualizado)
+                if (response.isSuccessful) {
+                    // Actualiza la lista local
+                    controlledMedications = controlledMedications.map {
+                        if (it._id == actualizado._id) actualizado else it
+                    }
+                    Log.d("ControlledMedication", "✅ Medicamento actualizado")
+                } else {
+                    Log.e("ControlledMedication", "❌ Error al actualizar: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("ControlledMedication", "❌ Excepción al actualizar: ${e.message}")
             }
         }
     }
