@@ -1,5 +1,6 @@
 package com.example.appvozamiga.data.network
 
+import com.example.appvozamiga.data.models.ControlledMedication
 import com.example.appvozamiga.data.models.Medications
 import com.example.appvozamiga.data.models.SosRequest
 import com.example.appvozamiga.data.models.UbicacionRequest
@@ -59,6 +60,22 @@ interface MongoApiService {
 
     @GET("api/user/isLinkedToWeb")
     suspend fun verificarVinculacion(@Query("userId") userId: String): Response<Map<String, Boolean>>
+
+    @GET("api/controlled-meds")
+    suspend fun getControlledMedications(@Query("email") email: String): Response<List<ControlledMedication>>
+
+    @POST("api/controlled-meds")
+    suspend fun addControlledMedication(@Body medicamento: ControlledMedication): Response<Unit>
+
+    @PUT("api/controlled-meds/{id}")
+    suspend fun updateControlledMedication(@Path("id") id: String, @Body medicamento: ControlledMedication): Response<Unit>
+
+    @DELETE("api/controlled-meds/{id}")
+    suspend fun deleteControlledMedication(@Path("id") id: String): Response<Unit>
+
+
+
+
 
 
 
