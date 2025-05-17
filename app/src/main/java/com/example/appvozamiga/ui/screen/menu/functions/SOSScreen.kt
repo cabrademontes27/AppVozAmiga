@@ -16,7 +16,7 @@ import androidx.navigation.NavController
 import com.example.appvozamiga.viewModels.menu.MainViewModel
 
 @Composable
-fun SOSScreen(navController: NavController) {
+fun SOSScreen(navController: NavController, autoEnviar: Boolean = false) {
     val context = LocalContext.current
     val viewModel: MainViewModel = viewModel()
 
@@ -29,6 +29,30 @@ fun SOSScreen(navController: NavController) {
         viewModel.loadLocalData(context)
         contactosCargados = true
         Log.d("SOS", "📥 Contactos cargados: ${viewModel.emergencyContacts}")
+        if (autoEnviar && !isSending) {
+            isSending = true
+            statusMessage = "Obteniendo ubicación..."
+
+            val contactos = viewModel.emergencyContacts.map { it.phone }.filter { it.isNotBlank() }
+
+            if (contactos.isEmpty()) {
+                statusMessage = "❌ No tienes contactos de emergencia registrados."
+                isSending = false
+            } else {
+                viewModel.getLinkLocation { ubicacion ->
+                    val mensaje = "SOS, eres mi contacto de emergencia. Ubicación: $ubicacion"
+
+                    viewModel.sendSmsSOS(contactos, mensaje) { exito ->
+                        statusMessage = if (exito) {
+                            "✅ Mensaje de SOS enviado correctamente."
+                        } else {
+                            "❌ Error al enviar el mensaje."
+                        }
+                        isSending = false
+                    }
+                }
+            }
+        }
     }
 
     Column(
