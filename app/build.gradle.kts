@@ -44,6 +44,7 @@ android {
 
 dependencies {
 
+    implementation ("androidx.work:work-runtime-ktx:2.9.0")
     implementation ("com.google.zxing:core:3.5.2")
     implementation ("com.alphacephei:vosk-android:0.3.47")
     implementation("androidx.compose.material:material-icons-extended")
