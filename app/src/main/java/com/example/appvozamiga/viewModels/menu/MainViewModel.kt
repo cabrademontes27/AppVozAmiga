@@ -48,6 +48,8 @@ import com.example.appvozamiga.data.models.loadEmergencyContacts
 import com.example.appvozamiga.data.models.saveEmergencyContacts
 import com.example.appvozamiga.data.models.saveUserId
 import com.example.appvozamiga.utils.VoskRecognizerUtils
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -81,6 +83,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var intentosSos = 0
     private var tiempoPrimerSos: Long = 0L
+
+    var currentToken by mutableStateOf(generateToken())
+    private var tokenJob: Job? = null
 
 
 
@@ -833,6 +838,64 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             Looper.getMainLooper()
         )
     }
+
+    // seccion dedicada al token de vinculacion
+
+    private fun generateToken(): String {
+        return (100000..999999).random().toString()
+    }
+
+    fun startTokenGeneration(onUpdate: (String) -> Unit) {
+        tokenJob?.cancel()
+        tokenJob = viewModelScope.launch {
+            while (true) {
+                val nuevoToken = generateToken()
+                currentToken = nuevoToken
+                Log.d("Token", "🎲 Token generado: $nuevoToken")
+                onUpdate(nuevoToken)
+
+                viewModelScope.launch {
+                    try {
+                        var emailActual = email.value
+
+                        if (emailActual.isBlank()) {
+                            // Intentamos cargar desde SharedPreferences
+                            emailActual = getUserEmail(appContext).orEmpty()
+                            if (emailActual.isNotBlank()) {
+                                Log.d("Token", "📥 Email cargado desde preferencias: $emailActual")
+                                email.value = emailActual // opcionalmente lo guardas
+                            } else {
+                                Log.e("Token", "❌ No se pudo obtener el email ni desde memoria ni desde preferencias")
+                            }
+                        }
+
+                        if (emailActual.isNotBlank()) {
+                            Log.d("Token", "📨 Enviando token al backend: $nuevoToken para $emailActual")
+                            val response = RetrofitClient.apiService.actualizarTokenVinculacion(
+                                mapOf("email" to emailActual, "linkToken" to nuevoToken)
+                            )
+
+                            if (response.isSuccessful) {
+                                Log.d("Token", "✅ Token actualizado correctamente en el backend")
+                            } else {
+                                Log.e("Token", "❌ Error al guardar token: ${response.code()} - ${response.message()}")
+                            }
+                        }
+
+                    } catch (e: Exception) {
+                        Log.e("Token", "❌ Excepción al enviar token: ${e.message}")
+                    }
+                }
+
+                delay(5 * 60 * 1000)
+            }
+        }
+    }
+
+
+
+
+
 
 
 
