@@ -209,7 +209,9 @@ fun AppNavigation() {
                 QrScreen(navController)
             }
             composable(Routes.SOS) {
-                SOSScreen(navController = navController)
+                val recognized = remember { mainViewModel.recognizedTextVoice }
+                val triggeredByVoice = recognized.contains("sos") || recognized.contains("compartir")
+                SOSScreen(navController = navController, autoEnviar = triggeredByVoice)
             }
             composable(Routes.LINKING) {
                 LinkingScreen(viewModel = mainViewModel)
