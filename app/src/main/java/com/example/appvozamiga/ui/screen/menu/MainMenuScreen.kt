@@ -89,7 +89,9 @@ fun MainMenuScreen(navController: NavController) {
         MenuItem("Acerca de mi", painterResource(R.drawable.profile), Color(0xFFE9573F)),
         MenuItem("Generar QR", painterResource(R.drawable.qr), Color(0xFF9B59B6)),
         MenuItem("SOS", painterResource(R.drawable.sos), Color(0xFFD63031)),
-        MenuItem("Vinculación", painterResource(R.drawable.vinculacion), Color(0xFF16A085)), // Usa un ícono que tengas
+        MenuItem("Vinculación", painterResource(R.drawable.vinculacion), Color(0xFF16A085)),
+        MenuItem("Medicamentos controlados", painterResource(R.drawable.medicamentos_control), Color(0xFF8E44AD)) // Color púrpura suave
+
 
     )
 
@@ -100,7 +102,8 @@ fun MainMenuScreen(navController: NavController) {
         "Acerca de mi" to Routes.ABOUT_ME,
         "Generar QR" to Routes.QR,
         "SOS" to Routes.SOS,
-        "Vinculación" to Routes.LINKING
+        "Vinculación" to Routes.LINKING,
+        "Medicamentos controlados" to Routes.CONTROLLED_MEDICATIONS,
     )
 
     val gridState = rememberLazyGridState()
