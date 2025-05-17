@@ -50,6 +50,10 @@ interface MongoApiService {
     @POST("/api/send-sos")
     suspend fun enviarSOS(@Body body: SosRequest): Response<Unit>
 
+    @POST("api/updateLinkTokenUsersApp")
+    suspend fun actualizarTokenVinculacion(@Body body: Map<String, String>): Response<Unit>
+
+
 
 
 }
