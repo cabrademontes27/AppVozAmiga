@@ -85,6 +85,16 @@ object VoskRecognizerUtils {
                         Log.d("Vosk", "⚠️ Reconocido comando: codigo/qr")
                         handleVoiceCommand("qr", viewModel, context)
                     }
+                    partial.contains("compartir") && lastRecognizedCommand != "sos" -> {
+                        lastRecognizedCommand = "sos"
+                        Log.d("Vosk", "⚠️ Reconocido comando:compartir ubicacion")
+                        handleVoiceCommand("sos", viewModel, context)
+                    }
+                    partial.contains("vinculacion") && lastRecognizedCommand != "vinculacion" -> {
+                        lastRecognizedCommand = "vinculacion"
+                        Log.d("Vosk", "⚠️ Reconocido comando: vinculacion ")
+                        handleVoiceCommand("vinculacion", viewModel, context)
+                    }
                 }
             }
 
@@ -184,6 +194,43 @@ object VoskRecognizerUtils {
                     }, duracion + 300)
                 }
             }
+
+            cmd.contains("compartir") || cmd.contains("compartir ubicacion") -> {
+                TextToSpeechUtils.detener()
+                val mensaje = "Abriendo pantalla de emergencia y enviando SOS"
+                val duracion = mensaje.estimateSpeechDuration()
+
+                TextToSpeechUtils.hablarConCallback(mensaje, "SOS") {
+                    Log.d("TTS", "✅ TTS finalizado para: SOS")
+                    viewModel.navegarARutaPorVoz(Routes.SOS)
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        viewModel.setLocked(context, false, hablarDespedida = true)
+                        lastRecognizedCommand = null
+                    }, duracion + 300)
+                }
+            }
+
+            cmd.contains("vinculacion") || cmd.contains("vincular") -> {
+                TextToSpeechUtils.detener()
+
+                val token = viewModel.currentToken
+                val mensaje = "Mostrando pantalla de vinculación. Tu código es: ${
+                    token.chunked(1).joinToString(" ") // 🗣️ Dice número por número
+                }"
+
+                val duracion = mensaje.estimateSpeechDuration()
+
+                TextToSpeechUtils.hablarConCallback(mensaje, "LINK") {
+                    Log.d("TTS", "✅ TTS finalizado para: vinculacion")
+                    viewModel.navegarARutaPorVoz(Routes.LINKING)
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        viewModel.setLocked(context, false, hablarDespedida = true)
+                        lastRecognizedCommand = null
+                    }, duracion + 300)
+                }
+            }
+
+
 
             cmd.contains("medicamentos") -> {
                 TextToSpeechUtils.detener()
