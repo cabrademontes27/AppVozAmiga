@@ -218,7 +218,7 @@ fun AppNavigation() {
                 LinkingScreen(viewModel = mainViewModel)
             }
 
-            composable(Routes.CONTROLLED_DRUGS) {
+            composable(Routes.CONTROLLED_MEDICATIONS) {
                 ControlledDrugsScreen(navController)
             }
 
