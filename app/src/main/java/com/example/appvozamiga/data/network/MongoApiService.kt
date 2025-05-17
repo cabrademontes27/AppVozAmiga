@@ -2,6 +2,7 @@ package com.example.appvozamiga.data.network
 
 import com.example.appvozamiga.data.models.Medications
 import com.example.appvozamiga.data.models.SosRequest
+import com.example.appvozamiga.data.models.UbicacionRequest
 import com.example.appvozamiga.data.models.UserData
 import retrofit2.Response
 import retrofit2.http.Body
@@ -53,6 +54,11 @@ interface MongoApiService {
     @POST("api/updateLinkTokenUsersApp")
     suspend fun actualizarTokenVinculacion(@Body body: Map<String, String>): Response<Unit>
 
+    @POST("api/ubicacion")
+    suspend fun actualizarUbicacion(@Body body: UbicacionRequest): Response<Unit>
+
+    @GET("api/user/isLinkedToWeb")
+    suspend fun verificarVinculacion(@Query("userId") userId: String): Response<Map<String, Boolean>>
 
 
 
