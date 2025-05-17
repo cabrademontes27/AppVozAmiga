@@ -38,3 +38,14 @@ data class UbicacionRequest(
     val lon: Double
 )
 
+data class ControlledMedication(
+    val _id: String? = null,
+    val name: String,
+    val description: String,
+    val email: String,
+    val startDateTime: Long, // timestamp en millis
+    val endDateTime: Long,
+    val intervalHours: Int
+)
+
+
