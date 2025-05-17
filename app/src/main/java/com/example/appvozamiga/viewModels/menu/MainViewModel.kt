@@ -41,15 +41,18 @@ import androidx.core.content.ContextCompat
 import com.example.appvozamiga.R
 import com.example.appvozamiga.utils.TextToSpeechUtils
 import android.Manifest
+import android.content.Intent
 import com.example.appvozamiga.data.models.EmergencyContact
 import com.example.appvozamiga.data.models.Location
 import com.example.appvozamiga.data.models.getUserId
 import com.example.appvozamiga.data.models.loadEmergencyContacts
 import com.example.appvozamiga.data.models.saveEmergencyContacts
 import com.example.appvozamiga.data.models.saveUserId
+import com.example.appvozamiga.utils.LocationService
 import com.example.appvozamiga.utils.VoskRecognizerUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import com.example.appvozamiga.data.models.UbicacionRequest
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -892,6 +895,118 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+
+    // aqui comparte nuestra ubicacin en tiempo real al back
+    // para que la pagina lo pueda interpretar y mostrar
+    // Nuevas funciones para ubicación en tiempo real con verificación previa
+
+    @SuppressLint("MissingPermission")
+    fun iniciarEnvioUbicacionPeriodico() {
+        viewModelScope.launch {
+            while (true) {
+                val permiso = Manifest.permission.ACCESS_FINE_LOCATION
+                if (ContextCompat.checkSelfPermission(appContext, permiso) != PackageManager.PERMISSION_GRANTED) {
+                    Log.e("Ubicación", "❌ Permiso de ubicación no concedido.")
+                    return@launch
+                }
+
+                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        val lat = location.latitude
+                        val lon = location.longitude
+                        Log.d("Ubicación", "📍 $lat, $lon")
+
+                        val emailUsuario = email.value.ifBlank { getUserEmail(appContext).orEmpty() }
+                        if (emailUsuario.isNotBlank()) {
+                            enviarUbicacionAlBackend(emailUsuario, lat, lon)
+                        }
+                    } else {
+                        Log.w("Ubicación", "⚠️ No se pudo obtener ubicación.")
+                    }
+                }
+
+                delay(10_000) // cada 10 segundos
+            }
+        }
+    }
+
+    fun enviarUbicacionAlBackend(email: String, lat: Double, lon: Double) {
+        viewModelScope.launch {
+            try {
+                val ubicacion = UbicacionRequest(email, lat, lon)
+                val response = RetrofitClient.apiService.actualizarUbicacion(ubicacion)
+
+
+                if (response.isSuccessful) {
+                    Log.d("Ubicación", "✅ Ubicación enviada al backend")
+                } else {
+                    Log.e("Ubicación", "❌ Error: ${response.code()} - ${response.message()}")
+                }
+            } catch (e: Exception) {
+                Log.e("Ubicación", "❌ Excepción al enviar ubicación: ${e.message}")
+            }
+        }
+    }
+
+    fun verificarYActivarEnvioUbicacion() {
+        val id = userId
+        if (id.isNullOrBlank()) {
+            Log.e("Vinculación", "❌ No hay userId para verificar vinculación")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.apiService.verificarVinculacion(id)
+                if (response.isSuccessful) {
+                    val linked = response.body()?.get("linked") == true
+                    if (linked) {
+                        Log.d("Vinculación", "✅ Usuario vinculado, iniciando envío de ubicación")
+                        iniciarEnvioUbicacionPeriodico()
+                    } else {
+                        Log.d("Vinculación", "🔒 Usuario no vinculado, no se enviará ubicación")
+                    }
+                } else {
+                    Log.e("Vinculación", "❌ Error al verificar: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("Vinculación", "❌ Excepción: ${e.message}")
+            }
+        }
+    }
+
+    fun detenerEnvioUbicacion() {
+        val intent = Intent(appContext, LocationService::class.java)
+        appContext.stopService(intent)
+    }
+
+    fun desvincularFamiliarDesdeApp() {
+        viewModelScope.launch {
+            userId = null
+            saveUserId(appContext, "") // limpia prefs
+            detenerEnvioUbicacion() // 🔴 Detiene el servicio
+        }
+    }
+
+    fun cargarUserIdDesdeBackendYVerificarUbicacion() {
+        val correo = email.value.ifBlank {
+            getUserEmail(appContext) ?: run {
+                Log.e("Ubicación", "❌ No se pudo obtener el correo.")
+                return
+            }
+        }
+
+        viewModelScope.launch {
+            val id = MongoUserRepository.getUserId(correo)
+            userId = id
+            if (id != null) {
+                saveUserId(appContext, id)
+                verificarYActivarEnvioUbicacion()
+            } else {
+                Log.e("Ubicación", "❌ No se pudo obtener el ID del backend")
+            }
+        }
+    }
 
 
 
