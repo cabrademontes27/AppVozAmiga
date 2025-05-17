@@ -27,11 +27,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavController
 import com.example.appvozamiga.ui.navigation.Routes
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.appvozamiga.viewModels.menu.MainViewModel
 
 
 //empezar a recrear la imagen de todo lo que contendra el mainMenu
@@ -45,6 +49,13 @@ data class MenuItem(
 fun MainMenuScreen(navController: NavController) {
     val context = LocalContext.current
     var showExitDialog by remember { mutableStateOf(false) }
+    val mainViewModel: MainViewModel = viewModel()
+
+    LaunchedEffect(Unit) {
+        Log.d("MainMenuScreen", "🔄 Verificando vinculación desde MainMenuScreen")
+        mainViewModel.cargarUserIdDesdeBackendYVerificarUbicacion()
+    }
+
 
     BackHandler(enabled = true) {
         showExitDialog = true
@@ -155,6 +166,22 @@ fun MainMenuScreen(navController: NavController) {
         }
         //aqui esta la funcionalidad de las notas, solo es un componente basico por si se quiere eliminar mas adelante
         NoteCommandScreenOverlay()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            Text(
+                text = "🛰️", // Satélite como pista visual sutil
+                modifier = Modifier
+                    .clickable {
+                        Log.d("MainMenuScreen", "🔁 Reiniciando verificación y ubicación")
+                        mainViewModel.cargarUserIdDesdeBackendYVerificarUbicacion()
+                    }
+                    .alpha(0.1f), // un poco visible por si lo quieres como "easter egg"
+            )
+        }
     }
 }
 
